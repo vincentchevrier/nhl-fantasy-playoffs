@@ -264,29 +264,29 @@
 
 .conn-top {
   flex: 1;
-  border-right: 2px solid var(--border-color);
-  border-bottom: 2px solid var(--border-color);
-  border-radius: 0 0 4px 0;
-}
-.conn-bot {
-  flex: 1;
-  border-right: 2px solid var(--border-color);
-  border-top: 2px solid var(--border-color);
-  border-radius: 0 4px 0 0;
-}
-
-/* East side connectors (mirror) */
-.east-conn .conn-top {
-  border-right: none;
   border-left: 2px solid var(--border-color);
   border-bottom: 2px solid var(--border-color);
   border-radius: 0 0 0 4px;
 }
-.east-conn .conn-bot {
-  border-right: none;
+.conn-bot {
+  flex: 1;
   border-left: 2px solid var(--border-color);
   border-top: 2px solid var(--border-color);
   border-radius: 4px 0 0 0;
+}
+
+/* East side connectors (mirror) */
+.east-conn .conn-top {
+  border-left: none;
+  border-right: 2px solid var(--border-color);
+  border-bottom: 2px solid var(--border-color);
+  border-radius: 0 0 4px 0;
+}
+.east-conn .conn-bot {
+  border-left: none;
+  border-right: 2px solid var(--border-color);
+  border-top: 2px solid var(--border-color);
+  border-radius: 0 4px 0 0;
 }
 
 /* R2→CF connectors */
@@ -304,16 +304,16 @@
 }
 
 .cf-conn-east .conn-top {
-  border-right: none;
-  border-left: 2px solid var(--border-color);
+  border-left: none;
+  border-right: 2px solid var(--border-color);
   border-bottom: 2px solid var(--border-color);
-  border-radius: 0 0 0 4px;
+  border-radius: 0 0 4px 0;
 }
 .cf-conn-east .conn-bot {
-  border-right: none;
-  border-left: 2px solid var(--border-color);
+  border-left: none;
+  border-right: 2px solid var(--border-color);
   border-top: 2px solid var(--border-color);
-  border-radius: 4px 0 0 0;
+  border-radius: 0 4px 0 0;
 }
 
 /* CF→SCF horizontal connectors */
