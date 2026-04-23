@@ -102,9 +102,39 @@ def bracket():
         client = NHLClient()
         data = client.schedule.playoff_carousel(season="20252026")
         rounds = data.get("rounds", [])
-    except Exception as e:
+    except Exception:
         rounds = []
-    return render_template("bracket.html", rounds=rounds)
+
+    def get_round(rnum):
+        for r in rounds:
+            if r.get("roundNumber") == rnum:
+                return r.get("series", [])
+        return []
+
+    r1 = get_round(1)
+    r2 = get_round(2)
+    r3 = get_round(3)
+    r4 = get_round(4)
+
+    def by_letter(series_list, *letters):
+        m = {s["seriesLetter"]: s for s in series_list}
+        return [m.get(l) for l in letters]
+
+    bracket = {
+        "west": {
+            "r1": by_letter(r1, "E", "F", "G", "H"),
+            "r2": r2[:2] if r2 else [None, None],
+            "cf": r3[0] if r3 else None,
+        },
+        "east": {
+            "r1": by_letter(r1, "A", "B", "C", "D"),
+            "r2": r2[2:4] if len(r2) >= 4 else [None, None],
+            "cf": r3[1] if len(r3) >= 2 else None,
+        },
+        "scf": r4[0] if r4 else None,
+    }
+
+    return render_template("bracket.html", bracket=bracket)
 
 
 @standings_bp.route("/dashboard")

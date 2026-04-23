@@ -1,57 +1,342 @@
 {% extends "base.html" %}
-{% block title %}Playoff Bracket — Fantasy Playoffs{% endblock %}
+{% block title %}Playoff Bracket — {{ pool_owner }} Fantasy Playoffs{% endblock %}
+
+{% macro series_card(s) %}
+{% if s %}
+{% set top = s.topSeed %}
+{% set bot = s.bottomSeed %}
+<div class="series-card{% if top.wins == 4 or bot.wins == 4 %} series-done{% endif %}">
+  <div class="series-team {% if bot.wins == 4 %}eliminated{% endif %}">
+    <img src="{{ top.logo }}" class="series-logo" onerror="this.style.display='none'">
+    <span class="series-abbrev">{{ top.abbrev }}</span>
+    <span class="series-wins {% if top.wins == 4 %}text-warning fw-bold{% endif %}">{{ top.wins }}</span>
+    {% if top.wins == 4 %}<i class="bi bi-trophy-fill text-warning ms-1" style="font-size:.65rem;"></i>{% endif %}
+  </div>
+  <div class="series-team {% if top.wins == 4 %}eliminated{% endif %}">
+    <img src="{{ bot.logo }}" class="series-logo" onerror="this.style.display='none'">
+    <span class="series-abbrev">{{ bot.abbrev }}</span>
+    <span class="series-wins {% if bot.wins == 4 %}text-warning fw-bold{% endif %}">{{ bot.wins }}</span>
+    {% if bot.wins == 4 %}<i class="bi bi-trophy-fill text-warning ms-1" style="font-size:.65rem;"></i>{% endif %}
+  </div>
+</div>
+{% else %}
+<div class="series-card series-tbd">
+  <div class="series-team"><span class="series-abbrev text-muted">TBD</span></div>
+  <div class="series-team"><span class="series-abbrev text-muted">TBD</span></div>
+</div>
+{% endif %}
+{% endmacro %}
+
 {% block content %}
 <h2 class="mb-4"><i class="bi bi-diagram-3-fill me-2"></i>Playoff Bracket</h2>
 
-{% if not rounds %}
-<div class="alert alert-warning">Could not load bracket data. Please try again later.</div>
-{% endif %}
+<div class="bracket-scroll">
+<div class="bracket-wrap">
 
-{% for round in rounds %}
-<div class="mb-5">
-  <h4 class="fw-semibold text-muted mb-3">
-    {% if loop.index == 1 %}First Round
-    {% elif loop.index == 2 %}Second Round
-    {% elif loop.index == 3 %}Conference Finals
-    {% elif loop.index == 4 %}Stanley Cup Final
-    {% else %}Round {{ loop.index }}
-    {% endif %}
-  </h4>
-  <div class="row g-3">
-    {% for series in round.series %}
-    {% set top = series.topSeed %}
-    {% set bot = series.bottomSeed %}
-    <div class="col-md-6 col-lg-4">
-      <div class="card shadow-sm border-0">
-        <div class="card-body p-3">
-          <!-- Top seed -->
-          <div class="d-flex align-items-center mb-2
-               {% if bot.wins == 4 %}opacity-50{% endif %}">
-            {% if series.get('logo') %}
-            <img src="{{ series.logo }}" class="team-logo me-2" onerror="this.style.display='none'">
-            {% else %}
-            <img src="https://assets.nhle.com/logos/nhl/svg/{{ top.abbrev }}_light.svg"
-                 class="team-logo me-2" onerror="this.style.display='none'">
-            {% endif %}
-            <div class="flex-grow-1 fw-semibold">{{ top.abbrev }}</div>
-            <div class="badge bg-dark fs-6 px-3">{{ top.wins }}</div>
-            {% if top.wins == 4 %}<i class="bi bi-trophy-fill text-warning ms-2"></i>{% endif %}
-          </div>
-          <div class="text-center text-muted small my-1">vs</div>
-          <!-- Bottom seed -->
-          <div class="d-flex align-items-center mt-2
-               {% if top.wins == 4 %}opacity-50{% endif %}">
-            <img src="https://assets.nhle.com/logos/nhl/svg/{{ bot.abbrev }}_light.svg"
-                 class="team-logo me-2" onerror="this.style.display='none'">
-            <div class="flex-grow-1 fw-semibold">{{ bot.abbrev }}</div>
-            <div class="badge bg-dark fs-6 px-3">{{ bot.wins }}</div>
-            {% if bot.wins == 4 %}<i class="bi bi-trophy-fill text-warning ms-2"></i>{% endif %}
-          </div>
-        </div>
+  <!-- Column labels -->
+  <div class="bracket-labels">
+    <div class="blabel west-label">Western Conference</div>
+    <div class="blabel">&nbsp;</div>
+    <div class="blabel">&nbsp;</div>
+    <div class="blabel center-label">Stanley Cup Final</div>
+    <div class="blabel">&nbsp;</div>
+    <div class="blabel">&nbsp;</div>
+    <div class="blabel east-label">Eastern Conference</div>
+  </div>
+
+  <div class="bracket-round-labels">
+    <div class="brlabel">1st Round</div>
+    <div class="brlabel">Semifinals</div>
+    <div class="brlabel">Conf. Final</div>
+    <div class="brlabel">&nbsp;</div>
+    <div class="brlabel">Conf. Final</div>
+    <div class="brlabel">Semifinals</div>
+    <div class="brlabel">1st Round</div>
+  </div>
+
+  <!-- Bracket body -->
+  <div class="bracket-body">
+
+    <!-- ── WEST R1 ── -->
+    <div class="bracket-col">
+      <div class="series-group top-group">
+        {{ series_card(bracket.west.r1[0]) }}
+        {{ series_card(bracket.west.r1[1]) }}
+      </div>
+      <div class="series-group bot-group">
+        {{ series_card(bracket.west.r1[2]) }}
+        {{ series_card(bracket.west.r1[3]) }}
       </div>
     </div>
-    {% endfor %}
-  </div>
-</div>
-{% endfor %}
+
+    <!-- connector R1→R2 west -->
+    <div class="bracket-conn-col">
+      <div class="conn-pair top-group"><div class="conn-top"></div><div class="conn-bot"></div></div>
+      <div class="conn-pair bot-group"><div class="conn-top"></div><div class="conn-bot"></div></div>
+    </div>
+
+    <!-- ── WEST R2 ── -->
+    <div class="bracket-col">
+      <div class="series-group top-group r2-group">
+        {{ series_card(bracket.west.r2[0]) }}
+      </div>
+      <div class="series-group bot-group r2-group">
+        {{ series_card(bracket.west.r2[1]) }}
+      </div>
+    </div>
+
+    <!-- connector R2→CF west -->
+    <div class="bracket-conn-col cf-conn">
+      <div class="conn-pair full-pair"><div class="conn-top"></div><div class="conn-bot"></div></div>
+    </div>
+
+    <!-- ── WEST CF ── -->
+    <div class="bracket-col cf-col">
+      <div class="series-group cf-group">
+        {{ series_card(bracket.west.cf) }}
+      </div>
+    </div>
+
+    <!-- connector CF→SCF west -->
+    <div class="bracket-conn-col scf-conn-left">
+      <div class="conn-h"></div>
+    </div>
+
+    <!-- ── STANLEY CUP FINAL ── -->
+    <div class="bracket-col scf-col">
+      <div class="series-group cf-group scf-group">
+        {{ series_card(bracket.scf) }}
+      </div>
+    </div>
+
+    <!-- connector CF→SCF east -->
+    <div class="bracket-conn-col scf-conn-right">
+      <div class="conn-h"></div>
+    </div>
+
+    <!-- ── EAST CF ── -->
+    <div class="bracket-col cf-col">
+      <div class="series-group cf-group">
+        {{ series_card(bracket.east.cf) }}
+      </div>
+    </div>
+
+    <!-- connector R2→CF east -->
+    <div class="bracket-conn-col cf-conn cf-conn-east">
+      <div class="conn-pair full-pair"><div class="conn-top"></div><div class="conn-bot"></div></div>
+    </div>
+
+    <!-- ── EAST R2 ── -->
+    <div class="bracket-col">
+      <div class="series-group top-group r2-group">
+        {{ series_card(bracket.east.r2[0]) }}
+      </div>
+      <div class="series-group bot-group r2-group">
+        {{ series_card(bracket.east.r2[1]) }}
+      </div>
+    </div>
+
+    <!-- connector R1→R2 east -->
+    <div class="bracket-conn-col east-conn">
+      <div class="conn-pair top-group"><div class="conn-top"></div><div class="conn-bot"></div></div>
+      <div class="conn-pair bot-group"><div class="conn-top"></div><div class="conn-bot"></div></div>
+    </div>
+
+    <!-- ── EAST R1 ── -->
+    <div class="bracket-col">
+      <div class="series-group top-group">
+        {{ series_card(bracket.east.r1[0]) }}
+        {{ series_card(bracket.east.r1[1]) }}
+      </div>
+      <div class="series-group bot-group">
+        {{ series_card(bracket.east.r1[2]) }}
+        {{ series_card(bracket.east.r1[3]) }}
+      </div>
+    </div>
+
+  </div><!-- bracket-body -->
+</div><!-- bracket-wrap -->
+</div><!-- bracket-scroll -->
+{% endblock %}
+
+{% block scripts %}
+<style>
+/* ── Scroll wrapper ── */
+.bracket-scroll { overflow-x: auto; padding-bottom: 1rem; }
+
+/* ── Overall bracket dimensions ── */
+:root {
+  --card-h: 68px;      /* height of one series card */
+  --gap: 8px;          /* gap between cards in same group */
+  --conn-w: 22px;      /* connector column width */
+  --card-w: 148px;     /* series card width */
+  --border-color: #6c757d;
+}
+
+.bracket-wrap { min-width: 1060px; }
+
+/* ── Label rows ── */
+.bracket-labels,
+.bracket-round-labels {
+  display: grid;
+  grid-template-columns: var(--card-w) var(--conn-w) var(--card-w) var(--conn-w) var(--card-w) var(--conn-w) var(--card-w) var(--conn-w) var(--card-w) var(--conn-w) var(--card-w) var(--conn-w) var(--card-w);
+  margin-bottom: 4px;
+}
+.blabel { text-align: center; font-weight: 700; font-size: .8rem; padding: 2px 0 6px; }
+.west-label { color: #0d6efd; grid-column: 1 / 4; }
+.center-label { color: #ffc107; grid-column: 7; }
+.east-label { color: #dc3545; grid-column: 11 / 14; }
+.brlabel { text-align: center; font-size: .7rem; color: #6c757d; padding-bottom: 6px; }
+
+/* ── Bracket body ── */
+.bracket-body {
+  display: grid;
+  grid-template-columns: var(--card-w) var(--conn-w) var(--card-w) var(--conn-w) var(--card-w) var(--conn-w) var(--card-w) var(--conn-w) var(--card-w) var(--conn-w) var(--card-w) var(--conn-w) var(--card-w);
+  align-items: stretch;
+}
+
+/* ── Series card ── */
+.series-card {
+  width: var(--card-w);
+  height: var(--card-h);
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 5px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  flex-shrink: 0;
+}
+.series-tbd { background: #f8f9fa; border-style: dashed; }
+.series-team {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.series-team.eliminated { opacity: .4; }
+.series-logo { width: 22px; height: 22px; object-fit: contain; flex-shrink: 0; }
+.series-abbrev { font-size: .8rem; font-weight: 600; flex: 1; }
+.series-wins { font-size: .85rem; font-weight: 700; margin-left: auto; }
+
+/* ── Column layouts ── */
+.bracket-col {
+  display: flex;
+  flex-direction: column;
+  height: calc(4 * var(--card-h) + 3 * var(--gap));
+}
+
+/* Groups within a column */
+.series-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  position: relative;
+}
+.top-group { flex: 1; justify-content: flex-start; }
+.bot-group { flex: 1; justify-content: flex-end; }
+
+/* R2: single card per group, centered within the group */
+.r2-group { justify-content: center; }
+
+/* CF: single card, centered over full height */
+.cf-col {
+  justify-content: center;
+}
+.cf-group { justify-content: center; flex: 1; }
+
+/* SCF col */
+.scf-col { justify-content: center; }
+.scf-group { justify-content: center; }
+
+/* ── Connector columns ── */
+.bracket-conn-col {
+  display: flex;
+  flex-direction: column;
+  height: calc(4 * var(--card-h) + 3 * var(--gap));
+}
+
+/* R1→R2: two pairs of connectors */
+.conn-pair {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.conn-pair.top-group,
+.conn-pair.bot-group { flex: 1; }
+
+.conn-top {
+  flex: 1;
+  border-right: 2px solid var(--border-color);
+  border-bottom: 2px solid var(--border-color);
+  border-radius: 0 0 4px 0;
+}
+.conn-bot {
+  flex: 1;
+  border-right: 2px solid var(--border-color);
+  border-top: 2px solid var(--border-color);
+  border-radius: 0 4px 0 0;
+}
+
+/* East side connectors (mirror) */
+.east-conn .conn-top {
+  border-right: none;
+  border-left: 2px solid var(--border-color);
+  border-bottom: 2px solid var(--border-color);
+  border-radius: 0 0 0 4px;
+}
+.east-conn .conn-bot {
+  border-right: none;
+  border-left: 2px solid var(--border-color);
+  border-top: 2px solid var(--border-color);
+  border-radius: 4px 0 0 0;
+}
+
+/* R2→CF connectors */
+.cf-conn .conn-pair.full-pair {
+  flex: 1;
+  justify-content: center;
+}
+.cf-conn .conn-top {
+  flex: 1;
+  max-height: 50%;
+}
+.cf-conn .conn-bot {
+  flex: 1;
+  max-height: 50%;
+}
+
+.cf-conn-east .conn-top {
+  border-right: none;
+  border-left: 2px solid var(--border-color);
+  border-bottom: 2px solid var(--border-color);
+  border-radius: 0 0 0 4px;
+}
+.cf-conn-east .conn-bot {
+  border-right: none;
+  border-left: 2px solid var(--border-color);
+  border-top: 2px solid var(--border-color);
+  border-radius: 4px 0 0 0;
+}
+
+/* CF→SCF horizontal connectors */
+.scf-conn-left,
+.scf-conn-right {
+  justify-content: center;
+}
+.conn-h {
+  width: 100%;
+  height: 2px;
+  background: var(--border-color);
+  align-self: center;
+  margin: auto 0;
+}
+
+/* Dark mode friendly */
+@media (prefers-color-scheme: dark) {
+  .series-card { background: #2b2d2f; border-color: #444; }
+}
+</style>
 {% endblock %}
