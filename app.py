@@ -47,6 +47,11 @@ def create_app():
     app.register_blueprint(standings_bp)
     app.register_blueprint(admin_bp)
 
+    @app.context_processor
+    def inject_globals():
+        pool_owner = os.environ.get("POOL_OWNER", "Collin's")
+        return {"pool_owner": pool_owner}
+
     @app.route("/")
     def index():
         if current_user.is_authenticated:
