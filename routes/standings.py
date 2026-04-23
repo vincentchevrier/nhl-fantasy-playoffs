@@ -137,6 +137,68 @@ def bracket():
     return render_template("bracket.html", bracket=bracket)
 
 
+@standings_bp.route("/picks")
+@login_required
+def picks_summary():
+    POOL_ORDER = (
+        [f"F{i}" for i in range(1, 13)]
+        + [f"D{i}" for i in range(1, 7)]
+        + [f"G{i}" for i in range(1, 5)]
+    )
+
+    elim_set = {e.team_abbr for e in EliminatedTeam.query.all()}
+    playoffs_setting = AppSetting.query.get("playoffs_started")
+    show_pts = playoffs_setting and playoffs_setting.value == "true"
+
+    teams = sorted(FantasyTeam.query.all(), key=lambda t: t.name.lower())
+
+    # Build {team_id: {pool: {name, pts, team_abbr, is_elim}}}
+    picks_map = {}
+    # Also count how many teams picked each player_id/goalie_id per pool
+    pick_counts = {}  # (pool, player_key) -> count
+
+    for team in teams:
+        picks_map[team.id] = {}
+        for pick in team.picks:
+            if pick.player_id and pick.player:
+                p = pick.player
+                stat = p.playoff_stats
+                pts = (stat.goals * 2 + stat.assists) if stat else 0
+                picks_map[team.id][pick.pool] = {
+                    "name": p.name,
+                    "pts": pts,
+                    "team_abbr": p.team,
+                    "is_elim": p.team in elim_set,
+                    "key": f"p{pick.player_id}",
+                }
+                pick_counts[(pick.pool, f"p{pick.player_id}")] = pick_counts.get((pick.pool, f"p{pick.player_id}"), 0) + 1
+            elif pick.goalie_id and pick.goalie:
+                g = pick.goalie
+                stat = g.playoff_stats
+                pts = (stat.wins * 2 + stat.shutouts * 2) if stat else 0
+                picks_map[team.id][pick.pool] = {
+                    "name": g.name,
+                    "pts": pts,
+                    "team_abbr": g.team,
+                    "is_elim": g.team in elim_set,
+                    "key": f"g{pick.goalie_id}",
+                }
+                pick_counts[(pick.pool, f"g{pick.goalie_id}")] = pick_counts.get((pick.pool, f"g{pick.goalie_id}"), 0) + 1
+
+    user_team = FantasyTeam.query.filter_by(user_id=current_user.id).first()
+    user_team_id = user_team.id if user_team else None
+
+    return render_template(
+        "picks_summary.html",
+        teams=teams,
+        picks_map=picks_map,
+        pick_counts=pick_counts,
+        pool_order=POOL_ORDER,
+        show_pts=show_pts,
+        user_team_id=user_team_id,
+    )
+
+
 @standings_bp.route("/dashboard")
 @login_required
 def dashboard():

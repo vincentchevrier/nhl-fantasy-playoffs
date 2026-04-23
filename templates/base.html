@@ -39,6 +39,10 @@
              href="{{ url_for('standings.standings') }}">Standings</a>
         </li>
         <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'standings.picks_summary' %}active{% endif %}"
+             href="{{ url_for('standings.picks_summary') }}">Who Took Who</a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link {% if request.endpoint == 'standings.bracket' %}active{% endif %}"
              href="{{ url_for('standings.bracket') }}">Bracket</a>
         </li>
