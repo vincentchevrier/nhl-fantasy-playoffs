@@ -93,7 +93,7 @@
               data-shutouts="{{ g.shutouts }}"
               data-gaa="{{ g.gaa }}"
               data-sv_pct="{{ g.sv_pct }}"
-              data-fpts="{{ g.wins + g.shutouts }}">
+              data-fpts="{{ g.wins * 2 + g.shutouts * 2 }}">
             <td class="text-center">
               {% if locked %}
                 {% if is_selected %}<i class="bi bi-check-circle-fill text-success"></i>{% endif %}
@@ -116,7 +116,7 @@
             <td>{{ g.shutouts }}</td>
             <td>{{ g.gaa }}</td>
             <td>{{ g.sv_pct }}</td>
-            <td class="fw-semibold">{{ g.wins + g.shutouts }}</td>
+            <td class="fw-semibold">{{ g.wins * 2 + g.shutouts * 2 }}</td>
           </tr>
           {% endfor %}
         </tbody>

@@ -29,7 +29,7 @@ def _team_total(fantasy_team, elim_set):
         elif pick.goalie_id:
             stat = pick.goalie.playoff_stats if pick.goalie else None
             if stat:
-                total += stat.wins + stat.shutouts
+                total += stat.wins * 2 + stat.shutouts * 2
     return total
 
 
@@ -72,7 +72,7 @@ def standings():
     )
     for g in goalies:
         stat = g.playoff_stats
-        pts = (stat.wins + stat.shutouts) if stat else 0
+        pts = (stat.wins * 2 + stat.shutouts * 2) if stat else 0
         goalie_rows.append({
             "id": g.id,
             "name": g.name,

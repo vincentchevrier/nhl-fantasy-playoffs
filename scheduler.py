@@ -21,7 +21,7 @@ def save_snapshots(app):
             elif pick.goalie_id and pick.goalie:
                 stat = pick.goalie.playoff_stats
                 if stat:
-                    total += stat.wins + stat.shutouts
+                    total += stat.wins * 2 + stat.shutouts * 2
 
         snap = PointsSnapshot.query.filter_by(
             fantasy_team_id=team.id, date=today

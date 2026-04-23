@@ -19,7 +19,7 @@ All 16 playoff teams' rosters are pulled at the start of the playoffs. Players a
 Each participant drafts **22 players** — one from each pool. Fantasy points are accumulated from playoff stats only:
 
 - **Skaters:** Goals × 2 + Assists
-- **Goalies:** Wins + Shutouts (shutout win = 2 pts total)
+- **Goalies:** Win × 2 + Shutouts × 2 (win = 2pts, shutout win = 4pts total)
 
 ## Features
 

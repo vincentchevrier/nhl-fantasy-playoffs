@@ -21,7 +21,7 @@ def _fantasy_points_for_pick(pick, elim_set):
         is_elim = goalie.team in elim_set
         stat = goalie.playoff_stats
         if stat:
-            pts = stat.wins + stat.shutouts
+            pts = stat.wins * 2 + stat.shutouts * 2
         else:
             pts = 0
         return pts, is_elim, goalie.name, goalie.team, "G", "goalie"
