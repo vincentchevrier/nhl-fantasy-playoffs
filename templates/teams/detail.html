@@ -27,7 +27,20 @@
       </thead>
       <tbody>
         {% for row in roster %}
-        <tr class="{% if row.is_eliminated %}table-secondary text-muted{% endif %}">
+        <tr class="player-row {% if row.is_eliminated %}table-secondary text-muted{% endif %}"
+            {% if row.type == 'skater' %}data-player-id="{{ row.player_id }}"{% else %}data-goalie-id="{{ row.player_id }}"{% endif %}
+            data-type="{{ 'player' if row.type == 'skater' else 'goalie' }}"
+            data-name="{{ row.name }}"
+            data-team="{{ row.team }}"
+            data-position="{{ row.position }}"
+            data-gp="{{ row.reg.gp }}"
+            data-goals="{{ row.reg.goals }}"
+            data-assists="{{ row.reg.assists }}"
+            data-points="{{ row.reg.points }}"
+            data-wins="{{ row.reg.wins }}"
+            data-shutouts="{{ row.reg.shutouts }}"
+            data-gaa="{{ row.reg.gaa }}"
+            data-sv_pct="{{ row.reg.sv_pct }}">
           <td data-val="{{ row.pool }}"><span class="badge bg-dark">{{ row.pool }}</span></td>
           <td data-val="{{ row.name }}">
             <img src="https://assets.nhle.com/mugs/nhl/20252026/{{ row.team }}/{{ row.player_id }}.png"

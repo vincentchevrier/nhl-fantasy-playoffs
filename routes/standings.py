@@ -60,6 +60,10 @@ def standings():
             "assists": stat.assists if stat else 0,
             "fantasy_points": pts,
             "is_eliminated": p.team in elim_set,
+            "reg_gp": p.gp,
+            "reg_goals": p.goals,
+            "reg_assists": p.assists,
+            "reg_points": p.points,
         })
     skater_rows.sort(key=lambda x: x["fantasy_points"], reverse=True)
 
@@ -82,6 +86,11 @@ def standings():
             "shutouts": stat.shutouts if stat else 0,
             "fantasy_points": pts,
             "is_eliminated": g.team in elim_set,
+            "reg_gp": g.gp,
+            "reg_wins": g.wins,
+            "reg_shutouts": g.shutouts,
+            "reg_gaa": round(g.gaa, 2),
+            "reg_sv_pct": round(g.sv_pct, 3),
         })
     goalie_rows.sort(key=lambda x: x["fantasy_points"], reverse=True)
 

@@ -243,18 +243,6 @@
 {% endif %}
 
 <!-- Hover card (always rendered) -->
-<div id="hover-card" class="position-fixed shadow-lg rounded bg-white border d-none"
-     style="z-index:9999; width:260px; pointer-events:none;">
-  <div class="p-2 text-center bg-dark rounded-top">
-    <img id="hc-logo" src="" class="team-logo mb-1" onerror="this.style.display='none'">
-  </div>
-  <div class="text-center p-2">
-    <img id="hc-headshot" src="" class="headshot-lg mb-2" onerror="this.style.display='none'">
-    <div id="hc-name" class="fw-bold small"></div>
-    <div id="hc-team-pos" class="text-muted small mb-1"></div>
-    <div id="hc-stats" class="small"></div>
-  </div>
-</div>
 
 <script>
   const existingPicks = {{ existing_picks | tojson }};

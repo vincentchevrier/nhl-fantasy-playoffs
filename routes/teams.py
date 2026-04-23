@@ -59,20 +59,27 @@ def team_detail(team_id):
         total += pts
 
         if pick.player_id:
-            stat = pick.player.playoff_stats
+            p = pick.player
+            stat = p.playoff_stats
             detail = {
                 "goals": stat.goals if stat else 0,
                 "assists": stat.assists if stat else 0,
                 "points": stat.points if stat else 0,
             }
             player_id = pick.player_id
+            reg = {"gp": p.gp, "goals": p.goals, "assists": p.assists, "points": p.points,
+                   "wins": 0, "shutouts": 0, "gaa": 0.0, "sv_pct": 0.0}
         else:
-            stat = pick.goalie.playoff_stats if pick.goalie else None
+            g = pick.goalie
+            stat = g.playoff_stats if g else None
             detail = {
                 "wins": stat.wins if stat else 0,
                 "shutouts": stat.shutouts if stat else 0,
             }
             player_id = pick.goalie_id
+            reg = {"gp": g.gp if g else 0, "goals": 0, "assists": 0, "points": 0,
+                   "wins": g.wins if g else 0, "shutouts": g.shutouts if g else 0,
+                   "gaa": round(g.gaa, 2) if g else 0.0, "sv_pct": round(g.sv_pct, 3) if g else 0.0}
 
         roster.append({
             "pool": pick.pool,
@@ -84,6 +91,7 @@ def team_detail(team_id):
             "fantasy_points": pts,
             "is_eliminated": is_elim,
             "detail": detail,
+            "reg": reg,
         })
 
     return render_template("teams/detail.html", fantasy_team=fantasy_team, roster=roster, total=total)

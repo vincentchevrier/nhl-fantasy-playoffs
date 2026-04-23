@@ -35,7 +35,16 @@
           </thead>
           <tbody>
             {% for p in skaters %}
-            <tr class="{% if p.is_eliminated %}table-secondary text-muted{% endif %}">
+            <tr class="player-row {% if p.is_eliminated %}table-secondary text-muted{% endif %}"
+                data-player-id="{{ p.id }}"
+                data-type="player"
+                data-name="{{ p.name }}"
+                data-team="{{ p.team }}"
+                data-position="{{ p.position }}"
+                data-gp="{{ p.reg_gp }}"
+                data-goals="{{ p.reg_goals }}"
+                data-assists="{{ p.reg_assists }}"
+                data-points="{{ p.reg_points }}">
               <td>{{ loop.index }}</td>
               <td data-val="{{ p.name }}">
                 <img src="https://assets.nhle.com/mugs/nhl/20252026/{{ p.team }}/{{ p.id }}.png"
@@ -78,7 +87,17 @@
           </thead>
           <tbody>
             {% for g in goalies %}
-            <tr class="{% if g.is_eliminated %}table-secondary text-muted{% endif %}">
+            <tr class="player-row {% if g.is_eliminated %}table-secondary text-muted{% endif %}"
+                data-goalie-id="{{ g.id }}"
+                data-type="goalie"
+                data-name="{{ g.name }}"
+                data-team="{{ g.team }}"
+                data-position="G"
+                data-gp="{{ g.reg_gp }}"
+                data-wins="{{ g.reg_wins }}"
+                data-shutouts="{{ g.reg_shutouts }}"
+                data-gaa="{{ g.reg_gaa }}"
+                data-sv_pct="{{ g.reg_sv_pct }}">
               <td>{{ loop.index }}</td>
               <td data-val="{{ g.name }}">
                 <img src="https://assets.nhle.com/mugs/nhl/20252026/{{ g.team }}/{{ g.id }}.png"
