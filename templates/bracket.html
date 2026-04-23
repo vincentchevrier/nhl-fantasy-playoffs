@@ -159,16 +159,16 @@
 /* ── Scroll wrapper ── */
 .bracket-scroll { overflow-x: auto; padding-bottom: 1rem; }
 
-/* ── Overall bracket dimensions ── */
+/* ── Responsive dimensions ──
+   Bracket has 13 columns: 7 card + 6 connector.
+   card-w scales so all 13 columns fit the viewport width.        */
 :root {
-  --card-h: 68px;      /* height of one series card */
-  --gap: 8px;          /* gap between cards in same group */
-  --conn-w: 22px;      /* connector column width */
-  --card-w: 148px;     /* series card width */
+  --card-w: clamp(62px, calc((100vw - 3rem) / 8), 148px);
+  --card-h: clamp(44px, calc((100vw - 3rem) * 0.058), 68px);
+  --conn-w: clamp(10px, calc((100vw - 3rem) / 56), 22px);
+  --gap:    clamp(3px,  0.6vw, 8px);
   --border-color: #6c757d;
 }
-
-.bracket-wrap { min-width: 1060px; }
 
 /* ── Label rows ── */
 .bracket-labels,
@@ -177,11 +177,11 @@
   grid-template-columns: var(--card-w) var(--conn-w) var(--card-w) var(--conn-w) var(--card-w) var(--conn-w) var(--card-w) var(--conn-w) var(--card-w) var(--conn-w) var(--card-w) var(--conn-w) var(--card-w);
   margin-bottom: 4px;
 }
-.blabel { text-align: center; font-weight: 700; font-size: .8rem; padding: 2px 0 6px; }
+.blabel { text-align: center; font-weight: 700; font-size: clamp(.6rem, 0.85vw, .8rem); padding: 2px 0 6px; }
 .west-label  { color: #0d6efd; grid-column: 1 / 6; }
 .center-label { color: #ffc107; grid-column: 7; }
 .east-label  { color: #dc3545; grid-column: 9 / 14; }
-.brlabel { text-align: center; font-size: .7rem; color: #6c757d; padding-bottom: 6px; }
+.brlabel { text-align: center; font-size: clamp(.5rem, 0.7vw, .7rem); color: #6c757d; padding-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ── Bracket body ── */
 .bracket-body {
@@ -196,25 +196,26 @@
   height: var(--card-h);
   background: #fff;
   border: 1px solid #dee2e6;
-  border-radius: 6px;
-  padding: 5px 8px;
+  border-radius: clamp(3px, 0.4vw, 6px);
+  padding: clamp(3px, 0.4vw, 5px) clamp(4px, 0.6vw, 8px);
   display: flex;
   flex-direction: column;
   justify-content: space-around;
   box-shadow: 0 1px 3px rgba(0,0,0,.08);
   flex-shrink: 0;
+  overflow: hidden;
 }
 .series-tbd { background: #f8f9fa; border-style: dashed; }
 .series-team {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: clamp(2px, 0.4vw, 5px);
   min-width: 0;
 }
 .series-team.eliminated { opacity: .4; }
-.series-logo { width: 22px; height: 22px; object-fit: contain; flex-shrink: 0; }
-.series-abbrev { font-size: .8rem; font-weight: 600; flex: 1; }
-.series-wins { font-size: .85rem; font-weight: 700; margin-left: auto; }
+.series-logo { width: clamp(14px, 1.8vw, 22px); height: clamp(14px, 1.8vw, 22px); object-fit: contain; flex-shrink: 0; }
+.series-abbrev { font-size: clamp(.5rem, 0.8vw, .8rem); font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.series-wins { font-size: clamp(.5rem, 0.85vw, .85rem); font-weight: 700; margin-left: auto; flex-shrink: 0; }
 
 /* ── Column layouts ── */
 .bracket-col {
