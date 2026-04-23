@@ -26,8 +26,7 @@ def ensure_json_files():
         import subprocess
         result = subprocess.run([sys.executable, "playoff_stats.py"], cwd=os.path.dirname(__file__))
         if result.returncode != 0:
-            print("ERROR: playoff_stats.py failed.")
-            sys.exit(1)
+            raise RuntimeError("playoff_stats.py failed — could not fetch NHL data.")
 
 
 def assign_pool(rank, group_size, prefix):
@@ -95,6 +94,33 @@ def seed_goalies(goalies):
         db.session.merge(goalie)
         inserted += 1
     return inserted
+
+
+def run_setup():
+    """Fetch fresh NHL data and re-seed pools. Call within an active Flask app context."""
+    # Always fetch fresh data
+    import subprocess
+    result = subprocess.run([sys.executable, "playoff_stats.py"], cwd=os.path.dirname(__file__))
+    if result.returncode != 0:
+        raise RuntimeError("playoff_stats.py failed — could not fetch NHL data.")
+
+    with open(SKATERS_JSON) as f:
+        skaters = json.load(f)
+    with open(GOALIES_JSON) as f:
+        goalies = json.load(f)
+
+    n_players = seed_players(skaters)
+    n_goalies = seed_goalies(goalies)
+    db.session.commit()
+
+    forwards = [s for s in skaters if s["position"] in ("C", "L", "R")]
+    defensemen = [s for s in skaters if s["position"] == "D"]
+    return {
+        "forwards": len(forwards),
+        "defensemen": len(defensemen),
+        "skaters": n_players,
+        "goalies": n_goalies,
+    }
 
 
 def main():

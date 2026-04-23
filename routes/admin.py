@@ -100,6 +100,23 @@ def create_user():
     return redirect(url_for("admin.admin"))
 
 
+@admin_bp.route("/admin/setup-pools", methods=["POST"])
+@login_required
+@admin_required
+def setup_pools():
+    from setup_pools import run_setup
+    try:
+        result = run_setup()
+        flash(
+            f"Pools seeded: {result['forwards']} forwards, {result['defensemen']} defensemen, "
+            f"{result['goalies']} goalies.",
+            "success",
+        )
+    except Exception as e:
+        flash(f"Setup failed: {e}", "danger")
+    return redirect(url_for("admin.admin"))
+
+
 @admin_bp.route("/admin/delete-user/<int:user_id>", methods=["POST"])
 @login_required
 @admin_required

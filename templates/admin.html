@@ -51,6 +51,25 @@
       </div>
     </div>
   </div>
+
+  <!-- Pool setup -->
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-dark text-white fw-semibold">Initial Setup</div>
+      <div class="card-body">
+        <p class="small text-muted mb-3">
+          Fetches current playoff rosters and regular season stats from the NHL API,
+          then bins players into draft pools. Run this once before the draft opens.
+        </p>
+        <form method="POST" action="{{ url_for('admin.setup_pools') }}"
+              onsubmit="return confirm('Fetch fresh NHL data and re-seed all pools? This takes ~15 seconds.')">
+          <button type="submit" class="btn btn-warning w-100">
+            <i class="bi bi-database-fill-gear me-1"></i>Seed Pools from NHL API
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Create User -->
