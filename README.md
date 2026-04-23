@@ -2,6 +2,8 @@
 
 A web-based NHL fantasy hockey playoff pool tracker — the digital evolution of Collin's legendary Excel spreadsheet.
 
+Live at **https://fantasyplayoffs.cyclikal.com**
+
 Built with Flask + SQLite + Bootstrap 5, powered by the [nhl-api-py](https://github.com/coreyjs/nhl-api-py) NHL Stats API wrapper.
 
 ## How It Works
@@ -29,9 +31,9 @@ Each participant drafts **22 players** — one from each pool. Fantasy points ar
 - Playoff bracket visualization
 - Interactive points-over-time chart on the dashboard (Plotly)
 - Schedule-aware stat refresh: nightly job + live 5-minute polling during game windows
-- Admin panel: manage users, toggle playoff state, force stat refresh
+- Admin panel: manage users, seed pools, toggle playoff state, force stat refresh
 
-## Setup
+## Local Development
 
 ### Requirements
 
@@ -59,16 +61,6 @@ cp .env.example .env
 | `MAIL_DEFAULT_SENDER` | From address for outgoing emails |
 | `SIGNUP_NOTIFY_EMAIL` | Address that receives new signup notifications |
 
-### Initialize the Database and Draft Pools
-
-Run once before the playoffs start to pull stats and bin players into pools:
-
-```
-python setup_pools.py
-```
-
-This fetches current playoff rosters and regular season stats from the NHL API, then seeds the database. It is idempotent — safe to re-run.
-
 ### Run
 
 ```
@@ -77,22 +69,51 @@ python app.py
 
 The app starts on port 8000. Log in with username `administrator` and the password set in `ADMIN_PASSWORD`.
 
-### Admin workflow
+## Deployment
 
-1. Direct users to `/signup` — they submit their email and receive credentials via email
-2. Alternatively, create users directly from the Admin panel
-3. Users draft their 22 players before the playoffs begin
-4. When ready, toggle **Playoffs Started** in the Admin panel — this locks all drafts
-5. Stats refresh nightly at 2 AM ET; the scheduler also polls every 5 minutes during live game windows
+The app runs on a DigitalOcean droplet behind Nginx with a Let's Encrypt TLS certificate. Gunicorn serves the Flask app as a systemd service.
+
+### Deploying changes
+
+```
+# 1. Make and test changes locally
+git commit -m "..."
+git push
+
+# 2. On the server
+cd /opt/nhl-fantasy-playoffs
+sudo -u fantasy git pull
+systemctl restart fantasy-playoffs
+```
+
+### Server layout
+
+| Path | Purpose |
+|---|---|
+| `/opt/nhl-fantasy-playoffs` | App root |
+| `/opt/nhl-fantasy-playoffs/.env` | Environment config (not in repo) |
+| `/opt/nhl-fantasy-playoffs/venv` | Python virtualenv |
+| `/var/log/fantasy-playoffs/` | Gunicorn access + error logs |
+| `/etc/systemd/system/fantasy-playoffs.service` | Systemd unit |
+| `/etc/nginx/sites-available/fantasy-playoffs` | Nginx config |
+
+## Admin Workflow
+
+1. Log in as `administrator`
+2. Click **Seed Pools from NHL API** — fetches current playoff rosters and bins players into pools (can also be run via `python setup_pools.py`)
+3. Direct users to `/signup` to request access, or create accounts directly from the Admin panel
+4. Users draft their 22 players before the playoffs begin
+5. Toggle **Start Playoffs & Lock Draft** — this locks all submitted teams
+6. Stats refresh nightly at 2 AM ET; the scheduler also polls every 5 minutes during live game windows
 
 ## Project Structure
 
 ```
 app.py              # App factory, blueprint registration, scheduler guard
 models.py           # SQLAlchemy models
-setup_pools.py      # One-time pool seeding script
+setup_pools.py      # Pool seeding (CLI or called from admin panel)
 scheduler.py        # Nightly + live-window stat refresh jobs
-playoff_stats.py    # Standalone script to fetch and rank playoff rosters
+playoff_stats.py    # Fetches and ranks playoff rosters from NHL API
 routes/
   auth.py           # signup, login, logout, change-password
   draft.py          # Draft page and pick submission
