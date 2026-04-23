@@ -92,7 +92,7 @@ def create_user():
         flash(f"A user with email '{email}' already exists.", "danger")
         return redirect(url_for("admin.admin"))
 
-    user = User(email=email, must_change_pw=False)
+    user = User(email=email, must_change_pw=False, is_enabled=True)
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
@@ -114,6 +114,21 @@ def setup_pools():
         )
     except Exception as e:
         flash(f"Setup failed: {e}", "danger")
+    return redirect(url_for("admin.admin"))
+
+
+@admin_bp.route("/admin/toggle-user/<int:user_id>", methods=["POST"])
+@login_required
+@admin_required
+def toggle_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.email == "administrator":
+        flash("Cannot disable the administrator account.", "danger")
+        return redirect(url_for("admin.admin"))
+    user.is_enabled = not user.is_enabled
+    db.session.commit()
+    status = "enabled" if user.is_enabled else "disabled"
+    flash(f"{user.email} {status}.", "success")
     return redirect(url_for("admin.admin"))
 
 

@@ -5,14 +5,22 @@
   <div class="col-md-4">
     <div class="card shadow-sm">
       <div class="card-body p-4">
-        <h3 class="card-title text-center mb-1">Request Access</h3>
-        <p class="text-center text-muted small mb-4">Enter your email to receive login credentials.</p>
+        <h3 class="card-title text-center mb-1">Create Account</h3>
+        <p class="text-center text-muted small mb-4">Your account will be active once approved by an admin.</p>
         <form method="POST">
           <div class="mb-3">
             <label class="form-label">Email</label>
             <input type="email" name="email" class="form-control" required autofocus>
           </div>
-          <button type="submit" class="btn btn-dark w-100">Request Access</button>
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" required minlength="8">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Confirm Password</label>
+            <input type="password" name="confirm_password" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-dark w-100">Create Account</button>
         </form>
         <hr>
         <p class="text-center mb-0 small">

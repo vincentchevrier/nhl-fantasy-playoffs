@@ -104,8 +104,8 @@
       <thead class="table-dark">
         <tr>
           <th>Email</th>
+          <th>Status</th>
           <th>Admin</th>
-          <th>Must Change PW</th>
           <th>Teams</th>
           <th>Joined</th>
           <th></th>
@@ -116,21 +116,28 @@
         <tr>
           <td>{{ user.email }}</td>
           <td>
+            {% if user.email == 'administrator' %}
+            <span class="text-muted small">—</span>
+            {% elif user.is_enabled %}
+            <span class="badge bg-success">Enabled</span>
+            {% else %}
+            <span class="badge bg-warning text-dark">Pending</span>
+            {% endif %}
+          </td>
+          <td>
             {% if user.is_admin %}
             <span class="badge bg-warning text-dark">Admin</span>
             {% endif %}
           </td>
-          <td>
-            {% if user.must_change_pw %}
-            <span class="badge bg-info">Yes</span>
-            {% else %}
-            <span class="text-muted small">No</span>
-            {% endif %}
-          </td>
           <td>{{ user.fantasy_teams|length }}</td>
           <td class="small text-muted">{{ user.created_at.strftime('%Y-%m-%d') }}</td>
-          <td>
+          <td class="d-flex gap-1">
             {% if user.email != 'administrator' %}
+            <form method="POST" action="{{ url_for('admin.toggle_user', user_id=user.id) }}">
+              <button type="submit" class="btn btn-sm {% if user.is_enabled %}btn-outline-secondary{% else %}btn-success{% endif %}">
+                {% if user.is_enabled %}Disable{% else %}Enable{% endif %}
+              </button>
+            </form>
             <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}"
                   onsubmit="return confirm('Delete {{ user.email }}?')">
               <button type="submit" class="btn btn-sm btn-outline-danger">

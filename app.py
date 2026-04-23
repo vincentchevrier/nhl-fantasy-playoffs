@@ -55,9 +55,27 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        _migrate_db()
         _seed_defaults()
 
     return app
+
+
+def _migrate_db():
+    """Add columns that may be missing from existing databases."""
+    import sqlite3
+    from flask import current_app
+    db_path = os.path.join(current_app.instance_path, "fantasy_playoffs.db")
+    if not os.path.exists(db_path):
+        return
+    conn = sqlite3.connect(db_path)
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(users)").fetchall()]
+    if "is_enabled" not in cols:
+        conn.execute("ALTER TABLE users ADD COLUMN is_enabled INTEGER DEFAULT 0")
+        # Enable the administrator account
+        conn.execute("UPDATE users SET is_enabled = 1 WHERE email = 'administrator'")
+        conn.commit()
+    conn.close()
 
 
 def _seed_defaults():
@@ -70,6 +88,7 @@ def _seed_defaults():
         admin = User(
             email="administrator",
             is_admin=True,
+            is_enabled=True,
             must_change_pw=False,
         )
         admin.set_password(os.environ.get("ADMIN_PASSWORD", "CHANGEME"))

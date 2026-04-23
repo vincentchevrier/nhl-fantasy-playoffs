@@ -13,6 +13,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     must_change_pw = db.Column(db.Boolean, default=True)
     is_admin = db.Column(db.Boolean, default=False)
+    is_enabled = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     fantasy_teams = db.relationship("FantasyTeam", backref="user", lazy=True, cascade="all, delete-orphan")
