@@ -1,7 +1,7 @@
 from functools import wraps
 from flask import Blueprint, render_template, redirect, url_for, abort, request, flash
 from flask_login import login_required, current_user
-from models import db, User, FantasyTeam, FantasyPick, AppSetting, PlayoffSkaterStats, PlayoffGoalieStats
+from models import db, User, FantasyTeam, FantasyPick, AppSetting, PlayoffSkaterStats, PlayoffGoalieStats, PointsSnapshot
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -126,9 +126,10 @@ def delete_user(user_id):
         flash("Cannot delete the administrator account.", "danger")
         return redirect(url_for("admin.admin"))
 
-    # Cascade: picks → teams → user
+    # Cascade: picks → snapshots → teams → user
     for team in user.fantasy_teams:
         FantasyPick.query.filter_by(fantasy_team_id=team.id).delete()
+        PointsSnapshot.query.filter_by(fantasy_team_id=team.id).delete()
     FantasyTeam.query.filter_by(user_id=user_id).delete()
     db.session.delete(user)
     db.session.commit()
