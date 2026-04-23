@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Admin — Fantasy Playoffs{% endblock %}
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-gear-fill me-2 text-warning"></i>Admin Panel</h2>
+
+<div class="row g-4 mb-5">
+  <!-- Playoffs toggle -->
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-dark text-white fw-semibold">Playoff Status</div>
+      <div class="card-body">
+        <div class="mb-3">
+          Status:
+          {% if playoffs_started %}
+          <span class="badge bg-success fs-6">STARTED — Draft Locked</span>
+          {% else %}
+          <span class="badge bg-secondary fs-6">Not Started — Draft Open</span>
+          {% endif %}
+        </div>
+        <form method="POST" action="{{ url_for('admin.toggle_playoffs') }}">
+          <button type="submit" class="btn {% if playoffs_started %}btn-warning{% else %}btn-success{% endif %} w-100">
+            {% if playoffs_started %}
+            <i class="bi bi-unlock me-1"></i>Mark Not Started
+            {% else %}
+            <i class="bi bi-lock me-1"></i>Start Playoffs & Lock Draft
+            {% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats refresh -->
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-dark text-white fw-semibold">Stats Refresh</div>
+      <div class="card-body">
+        <div class="mb-3 small text-muted">
+          Last refresh:
+          {% if last_refresh %}
+            {{ last_refresh.strftime('%Y-%m-%d %H:%M UTC') }}
+          {% else %}
+            Never
+          {% endif %}
+        </div>
+        <form method="POST" action="{{ url_for('admin.refresh_stats') }}">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-arrow-clockwise me-1"></i>Force Refresh Now
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create User -->
+<div class="row g-4 mb-5">
+  <div class="col-md-5">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-dark text-white fw-semibold">Create User</div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('admin.create_user') }}">
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">Email</label>
+            <input type="text" name="email" class="form-control" placeholder="user@example.com" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Password</label>
+            <input type="text" name="password" class="form-control" placeholder="Min 8 characters" required minlength="8">
+          </div>
+          <button type="submit" class="btn btn-dark w-100">
+            <i class="bi bi-person-plus me-1"></i>Create User
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- User Management -->
+<h4 class="mb-3">User Management</h4>
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-dark">
+        <tr>
+          <th>Email</th>
+          <th>Admin</th>
+          <th>Must Change PW</th>
+          <th>Teams</th>
+          <th>Joined</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td>{{ user.email }}</td>
+          <td>
+            {% if user.is_admin %}
+            <span class="badge bg-warning text-dark">Admin</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if user.must_change_pw %}
+            <span class="badge bg-info">Yes</span>
+            {% else %}
+            <span class="text-muted small">No</span>
+            {% endif %}
+          </td>
+          <td>{{ user.fantasy_teams|length }}</td>
+          <td class="small text-muted">{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+          <td>
+            {% if user.email != 'administrator' %}
+            <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}"
+                  onsubmit="return confirm('Delete {{ user.email }}?')">
+              <button type="submit" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

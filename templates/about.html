@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}About — Fantasy Playoffs{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+
+    <h2 class="mb-1">About This Pool</h2>
+    <p class="text-muted mb-4">Everything you need to know about Collin's Fantasy Playoffs.</p>
+
+    <!-- Origin -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3"><i class="bi bi-trophy-fill text-warning me-2"></i>The Legend</h5>
+        <p>
+          This site is the digital evolution of <strong>Collin's famous Spreadsheet NHL Fantasy Playoffs</strong> —
+          a handcrafted Excel masterpiece that has been the centrepiece of playoff season for years.
+          Every pool, every pick, every argument about who got robbed in the draft: it all started there.
+        </p>
+      </div>
+    </div>
+
+    <!-- How it works -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3"><i class="bi bi-diagram-3-fill text-primary me-2"></i>How the Draft Pools Work</h5>
+        <p>
+          All 16 NHL playoff teams' rosters are pulled at the start of the playoffs. Players are ranked by
+          their <strong>regular season statistics</strong> and divided into draft pools so that every
+          participant has access to players of similar calibre — no one can just pick the top 22 players.
+        </p>
+
+        <h6 class="fw-semibold mt-4 mb-2">Forwards (F1 – F12)</h6>
+        <p>
+          All playoff forwards (centres, left wings, right wings) are ranked by regular season
+          <strong>points</strong>, with goals as the tiebreaker. The top 96 are pooled into 12 groups of 8:
+        </p>
+        <div class="table-responsive mb-3">
+          <table class="table table-sm table-bordered mb-0" style="max-width:400px;">
+            <thead class="table-dark">
+              <tr><th>Pool</th><th>Overall Ranks</th><th>Tier</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="badge bg-dark">F1</span></td><td>1 – 8</td><td>Elite</td></tr>
+              <tr><td><span class="badge bg-dark">F2</span></td><td>9 – 16</td><td>Star</td></tr>
+              <tr><td><span class="badge bg-dark">F3 – F6</span></td><td>17 – 48</td><td>Top-six</td></tr>
+              <tr><td><span class="badge bg-dark">F7 – F12</span></td><td>49 – 96</td><td>Depth</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h6 class="fw-semibold mt-4 mb-2">Defensemen (D1 – D6)</h6>
+        <p>
+          All playoff defencemen are ranked by regular season <strong>points</strong>. The top 42 are split
+          into 6 groups of 7:
+        </p>
+        <div class="table-responsive mb-3">
+          <table class="table table-sm table-bordered mb-0" style="max-width:400px;">
+            <thead class="table-dark">
+              <tr><th>Pool</th><th>Overall Ranks</th></tr>
+            </thead>
+            <tbody>
+              {% for i in range(1, 7) %}
+              <tr>
+                <td><span class="badge bg-dark">D{{ i }}</span></td>
+                <td>{{ (i-1)*7 + 1 }} – {{ i*7 }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <h6 class="fw-semibold mt-4 mb-2">Goalies (G1 – G4)</h6>
+        <p>
+          Playoff goalies are ranked by regular season <strong>wins + shutouts</strong> — the same formula
+          used for fantasy scoring. This rewards true No. 1 starters over backups who posted a gaudy
+          save percentage over a handful of games. The top 28 are split into 4 groups of 7:
+        </p>
+        <div class="table-responsive mb-3">
+          <table class="table table-sm table-bordered mb-0" style="max-width:400px;">
+            <thead class="table-dark">
+              <tr><th>Pool</th><th>Overall Ranks</th></tr>
+            </thead>
+            <tbody>
+              {% for i in range(1, 5) %}
+              <tr>
+                <td><span class="badge bg-dark">G{{ i }}</span></td>
+                <td>{{ (i-1)*7 + 1 }} – {{ i*7 }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="alert alert-info mb-0 mt-3">
+          <i class="bi bi-info-circle me-2"></i>
+          Each participant drafts <strong>22 players</strong>: one from each of F1–F12, D1–D6, and G1–G4.
+          You pick one player per pool — choose wisely.
+        </div>
+      </div>
+    </div>
+
+    <!-- Scoring -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3"><i class="bi bi-calculator-fill text-success me-2"></i>Fantasy Points</h5>
+        <p>Points are accumulated from <strong>playoff statistics only</strong> — regular season numbers don't count once the puck drops in Game 1.</p>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="card border-0 bg-light h-100">
+              <div class="card-body">
+                <h6 class="fw-bold mb-3">Skaters (Forwards &amp; Defencemen)</h6>
+                <table class="table table-sm mb-0">
+                  <tbody>
+                    <tr><td>Goal</td><td class="fw-bold text-success">+2 pts</td></tr>
+                    <tr><td>Assist</td><td class="fw-bold text-success">+1 pt</td></tr>
+                  </tbody>
+                </table>
+                <p class="small text-muted mt-2 mb-0">
+                  Formula: <code>Goals × 2 + Assists</code>
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card border-0 bg-light h-100">
+              <div class="card-body">
+                <h6 class="fw-bold mb-3">Goalies</h6>
+                <table class="table table-sm mb-0">
+                  <tbody>
+                    <tr><td>Win</td><td class="fw-bold text-success">+1 pt</td></tr>
+                    <tr><td>Shutout win</td><td class="fw-bold text-success">+2 pts</td></tr>
+                  </tbody>
+                </table>
+                <p class="small text-muted mt-2 mb-0">
+                  Formula: <code>Wins + Shutouts</code>
+                  <br>A shutout win gives 2 pts total (win + shutout bonus).
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rules -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3"><i class="bi bi-list-check text-danger me-2"></i>Rules</h5>
+        <ul class="mb-0" style="line-height: 2;">
+          <li>The draft closes when the admin starts the playoffs — no changes after that.</li>
+          <li>Each participant picks <strong>exactly one player from each pool</strong> (22 picks total).</li>
+          <li>Players from <strong>eliminated teams</strong> stop accumulating points and are shown with an <span class="badge bg-secondary">ELIM</span> badge.</li>
+          <li>Stats are refreshed nightly from the NHL API.</li>
+          <li>Tiebreakers are settled by goals (skaters) or wins (goalies).</li>
+          <li>The participant with the most fantasy points at the end of the Stanley Cup playoffs wins.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Built with -->
+    <div class="card shadow-sm border-0 mb-4 ">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3"><i class="bi bi-code-slash me-2 text-warning"></i>Built With Claude Code</h5>
+        <p class="mb-2">
+          Powered by the NHL Stats API via
+          <a href="https://github.com/coreyjs/nhl-api-py" class="text-warning" target="_blank">nhl-api-py</a>.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

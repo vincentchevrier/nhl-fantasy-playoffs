@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ fantasy_team.name }} — Fantasy Playoffs{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-0">{{ fantasy_team.name }}</h2>
+    <div class="text-muted small">{{ fantasy_team.user.email }}</div>
+  </div>
+  <div class="text-end">
+    <div class="display-6 fw-bold text-dark">{{ total }}</div>
+    <div class="text-muted small">Fantasy Points</div>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 js-sortable">
+      <thead class="table-dark">
+        <tr>
+          <th data-sort="natural">Pool</th>
+          <th data-sort="str">Name</th>
+          <th data-sort="str">Team</th>
+          <th data-sort="str">Pos</th>
+          <th>Stats</th>
+          <th data-sort="num" data-sort-default="desc">FPts</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in roster %}
+        <tr class="{% if row.is_eliminated %}table-secondary text-muted{% endif %}">
+          <td data-val="{{ row.pool }}"><span class="badge bg-dark">{{ row.pool }}</span></td>
+          <td data-val="{{ row.name }}">
+            <img src="https://assets.nhle.com/mugs/nhl/20252026/{{ row.team }}/{{ row.player_id }}.png"
+                 class="headshot-sm me-2" onerror="this.style.display='none'">
+            {{ row.name }}
+            {% if row.is_eliminated %}<span class="badge bg-secondary ms-1">ELIM</span>{% endif %}
+          </td>
+          <td data-val="{{ row.team }}">
+            <img src="https://assets.nhle.com/logos/nhl/svg/{{ row.team }}_light.svg"
+                 class="team-logo-sm" onerror="this.style.display='none'">
+            {{ row.team }}
+          </td>
+          <td>{{ row.position }}</td>
+          <td class="small text-muted">
+            {% if row.type == "skater" %}
+              {{ row.detail.goals }}G {{ row.detail.assists }}A {{ row.detail.points }}P
+            {% else %}
+              {{ row.detail.wins }}W {{ row.detail.shutouts }}SO
+            {% endif %}
+          </td>
+          <td class="fw-bold">{{ row.fantasy_points }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="mt-3">
+  <a href="{{ url_for('teams.teams_list') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>All Teams
+  </a>
+</div>
+{% endblock %}

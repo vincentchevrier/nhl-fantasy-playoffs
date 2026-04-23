@@ -1,0 +1,37 @@
+# Environment
+.env
+
+# Database
+instance/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+.venv/
+env/
+
+# Generated data files
+playoff_skaters.json
+playoff_goalies.json
+
+# nhl-api-py library clone (installed via pip in deployment)
+nhl-api-py/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

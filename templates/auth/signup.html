@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Sign Up — Fantasy Playoffs{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h3 class="card-title text-center mb-1">Request Access</h3>
+        <p class="text-center text-muted small mb-4">Enter your email to receive login credentials.</p>
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" required autofocus>
+          </div>
+          <button type="submit" class="btn btn-dark w-100">Request Access</button>
+        </form>
+        <hr>
+        <p class="text-center mb-0 small">
+          Already have an account? <a href="{{ url_for('auth.login') }}">Login</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,126 @@
+/* ── Images ─────────────────────────────────────────────── */
+.headshot-sm {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #eee;
+}
+
+.headshot-lg {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #eee;
+}
+
+.team-logo-sm {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.team-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+/* ── Draft page ─────────────────────────────────────────── */
+.pool-card {
+  border: 1px solid #dee2e6;
+  transition: box-shadow 0.15s;
+}
+
+.pool-card:hover {
+  box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,.12) !important;
+}
+
+.player-row {
+  cursor: pointer;
+}
+
+.player-row:hover td {
+  background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* ── Sortable headers ───────────────────────────────────── */
+th[data-sort],
+th.sortable {
+  user-select: none;
+}
+
+th[data-sort]:hover,
+th.sortable:hover {
+  opacity: 0.85;
+}
+
+th[data-sort]::after {
+  content: " ⇅";
+  font-size: 0.7em;
+  opacity: 0.35;
+}
+
+th[data-sort].sort-asc::after {
+  content: " ↑";
+  opacity: 0.9;
+}
+
+th[data-sort].sort-desc::after {
+  content: " ↓";
+  opacity: 0.9;
+}
+
+/* draft.js uses these classes on th.sortable */
+th.sortable::after {
+  content: " ⇅";
+  font-size: 0.7em;
+  opacity: 0.35;
+}
+
+th.sort-asc::after {
+  content: " ↑";
+  font-size: 0.75em;
+  opacity: 0.9;
+}
+
+th.sort-desc::after {
+  content: " ↓";
+  font-size: 0.75em;
+  opacity: 0.9;
+}
+
+/* ── Dashboard hover cards ──────────────────────────────── */
+.hover-card {
+  transition: box-shadow 0.15s;
+}
+
+.hover-card:hover {
+  box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,.12) !important;
+}
+
+/* ── Sticky submit bar ───────────────────────────────────── */
+.sticky-bottom {
+  position: sticky;
+  bottom: 0;
+  z-index: 1020;
+}
+
+/* ── Hover card (player) ────────────────────────────────── */
+#hover-card {
+  transition: opacity 0.1s;
+}
+
+/* ── Misc ───────────────────────────────────────────────── */
+.navbar-brand {
+  letter-spacing: -0.02em;
+}
+
+.badge.bg-success {
+  font-weight: 500;
+}
+
+.table td, .table th {
+  vertical-align: middle;
+}

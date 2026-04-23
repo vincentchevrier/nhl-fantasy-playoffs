@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+{% block title %}Draft — Fantasy Playoffs{% endblock %}
+
+{% macro pool_card(pool, skaters, goalies_list, elim, existing, locked, p_ranks, g_ranks) %}
+<div class="card shadow-sm pool-card" id="pool-{{ pool }}">
+  <div class="card-header d-flex justify-content-between align-items-center py-2 bg-dark text-white">
+    <span class="fw-bold">{{ pool }}</span>
+    <span class="badge {% if existing.get(pool) %}bg-success{% else %}bg-secondary{% endif %}" id="selected-{{ pool }}">
+      {% if existing.get(pool) %}
+        {% set pid = existing.get(pool) %}
+        {% for p in skaters %}{% if p.id == pid %}{{ p.name }}{% endif %}{% endfor %}
+        {% for g in goalies_list %}{% if g.id == pid %}{{ g.name }}{% endif %}{% endfor %}
+      {% else %}No pick{% endif %}
+    </span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0 sortable-table" data-pool="{{ pool }}">
+        <thead class="table-light">
+          <tr>
+            <th style="width:30px"></th>
+            <th class="sortable" data-col="rank">#</th>
+            <th class="sortable" data-col="name">Name</th>
+            <th class="sortable" data-col="team">Team</th>
+            <th class="sortable" data-col="gp">GP</th>
+            {% if skaters %}
+            <th class="sortable" data-col="goals">G</th>
+            <th class="sortable" data-col="assists">A</th>
+            <th class="sortable" data-col="points">PTS</th>
+            {% else %}
+            <th class="sortable" data-col="wins">W</th>
+            <th class="sortable" data-col="shutouts">SO</th>
+            <th class="sortable" data-col="gaa">GAA</th>
+            <th class="sortable" data-col="sv_pct">SV%</th>
+            <th class="sortable" data-col="fpts">FPts</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in skaters %}
+          {% set is_elim = p.team in elim %}
+          {% set is_selected = existing.get(pool) == p.id %}
+          {% set overall_rank = p_ranks[p.id] %}
+          <tr class="player-row {% if is_elim %}table-secondary{% elif locked and is_selected %}table-success{% endif %}"
+              data-player-id="{{ p.id }}"
+              data-type="player"
+              data-pool="{{ pool }}"
+              data-rank="{{ overall_rank }}"
+              data-name="{{ p.name }}"
+              data-team="{{ p.team }}"
+              data-position="{{ p.position }}"
+              data-gp="{{ p.gp }}"
+              data-goals="{{ p.goals }}"
+              data-assists="{{ p.assists }}"
+              data-points="{{ p.points }}">
+            <td class="text-center">
+              {% if locked %}
+                {% if is_selected %}<i class="bi bi-check-circle-fill text-success"></i>{% endif %}
+              {% else %}
+              <input type="radio" name="pick-{{ pool }}" value="{{ p.id }}"
+                     class="form-check-input pool-radio"
+                     data-pool="{{ pool }}" data-id="{{ p.id }}" data-type="player"
+                     data-name="{{ p.name }}" data-team="{{ p.team }}"
+                     {% if is_selected %}checked{% endif %}>
+              {% endif %}
+            </td>
+            <td class="text-muted small">{{ overall_rank }}</td>
+            <td>
+              {{ p.name }}
+              {% if is_elim %}<span class="badge bg-secondary ms-1">ELIM</span>{% endif %}
+            </td>
+            <td>{{ p.team }}</td>
+            <td>{{ p.gp }}</td>
+            <td>{{ p.goals }}</td>
+            <td>{{ p.assists }}</td>
+            <td class="fw-semibold">{{ p.points }}</td>
+          </tr>
+          {% endfor %}
+          {% for g in goalies_list %}
+          {% set is_elim = g.team in elim %}
+          {% set is_selected = existing.get(pool) == g.id %}
+          {% set overall_rank = g_ranks[g.id] %}
+          <tr class="player-row {% if is_elim %}table-secondary{% elif locked and is_selected %}table-success{% endif %}"
+              data-goalie-id="{{ g.id }}"
+              data-type="goalie"
+              data-pool="{{ pool }}"
+              data-rank="{{ overall_rank }}"
+              data-name="{{ g.name }}"
+              data-team="{{ g.team }}"
+              data-position="G"
+              data-gp="{{ g.gp }}"
+              data-wins="{{ g.wins }}"
+              data-shutouts="{{ g.shutouts }}"
+              data-gaa="{{ g.gaa }}"
+              data-sv_pct="{{ g.sv_pct }}"
+              data-fpts="{{ g.wins + g.shutouts }}">
+            <td class="text-center">
+              {% if locked %}
+                {% if is_selected %}<i class="bi bi-check-circle-fill text-success"></i>{% endif %}
+              {% else %}
+              <input type="radio" name="pick-{{ pool }}" value="{{ g.id }}"
+                     class="form-check-input pool-radio"
+                     data-pool="{{ pool }}" data-id="{{ g.id }}" data-type="goalie"
+                     data-name="{{ g.name }}" data-team="{{ g.team }}"
+                     {% if is_selected %}checked{% endif %}>
+              {% endif %}
+            </td>
+            <td class="text-muted small">{{ overall_rank }}</td>
+            <td>
+              {{ g.name }}
+              {% if is_elim %}<span class="badge bg-secondary ms-1">ELIM</span>{% endif %}
+            </td>
+            <td>{{ g.team }}</td>
+            <td>{{ g.gp }}</td>
+            <td>{{ g.wins }}</td>
+            <td>{{ g.shutouts }}</td>
+            <td>{{ g.gaa }}</td>
+            <td>{{ g.sv_pct }}</td>
+            <td class="fw-semibold">{{ g.wins + g.shutouts }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{% block content %}
+
+{% set forward_pools = ['F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12'] %}
+{% set defense_pools = ['D1','D2','D3','D4','D5','D6'] %}
+{% set goalie_pools = ['G1','G2','G3','G4'] %}
+
+{% if playoffs_locked %}
+
+  {# ── LOCKED: same pool cards, read-only ───────────────────────────── #}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-pencil-square me-2"></i>
+      {% if fantasy_team %}{{ fantasy_team.name }}{% else %}Draft{% endif %}
+    </h2>
+    <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+      <i class="bi bi-lock-fill me-1"></i>Playoffs Started — Draft Locked
+    </span>
+  </div>
+
+  <h5 class="fw-semibold text-muted mb-3">Forwards</h5>
+  <div class="row g-3 mb-4">
+  {% for pool in forward_pools %}
+    {% set pool_players = players | selectattr('pool', 'equalto', pool) | list %}
+    <div class="col-12">
+      {{ pool_card(pool, pool_players, [], eliminated, existing_picks, true, player_ranks, goalie_ranks) }}
+    </div>
+  {% endfor %}
+  </div>
+
+  <h5 class="fw-semibold text-muted mb-3">Defensemen</h5>
+  <div class="row g-3 mb-4">
+  {% for pool in defense_pools %}
+    {% set pool_players = players | selectattr('pool', 'equalto', pool) | list %}
+    <div class="col-12">
+      {{ pool_card(pool, pool_players, [], eliminated, existing_picks, true, player_ranks, goalie_ranks) }}
+    </div>
+  {% endfor %}
+  </div>
+
+  <h5 class="fw-semibold text-muted mb-3">Goalies</h5>
+  <div class="row g-3 mb-4">
+  {% for pool in goalie_pools %}
+    {% set pool_goalies = goalies | selectattr('pool', 'equalto', pool) | list %}
+    <div class="col-12">
+      {{ pool_card(pool, [], pool_goalies, eliminated, existing_picks, true, player_ranks, goalie_ranks) }}
+    </div>
+  {% endfor %}
+  </div>
+
+{% else %}
+
+  {# ── OPEN: full draft form ─────────────────────────────────────────── #}
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Draft Your Team</h2>
+    <span class="badge bg-dark fs-6" id="pick-counter">0 / 22 picks</span>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress mb-4" style="height: 8px;">
+    <div class="progress-bar bg-success" id="pick-progress" style="width: 0%"></div>
+  </div>
+
+  <!-- Team name -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <label class="form-label fw-semibold">Team Name</label>
+      <input type="text" id="team-name" class="form-control form-control-lg"
+             placeholder="Enter your team name..."
+             value="{{ fantasy_team.name if fantasy_team else '' }}">
+    </div>
+  </div>
+
+  <!-- Pool cards -->
+  <h5 class="fw-semibold text-muted mb-3">Forwards</h5>
+  <div class="row g-3 mb-4">
+  {% for pool in forward_pools %}
+    {% set pool_players = players | selectattr('pool', 'equalto', pool) | list %}
+    <div class="col-12">
+      {{ pool_card(pool, pool_players, [], eliminated, existing_picks, false, player_ranks, goalie_ranks) }}
+    </div>
+  {% endfor %}
+  </div>
+
+  <h5 class="fw-semibold text-muted mb-3">Defensemen</h5>
+  <div class="row g-3 mb-4">
+  {% for pool in defense_pools %}
+    {% set pool_players = players | selectattr('pool', 'equalto', pool) | list %}
+    <div class="col-12">
+      {{ pool_card(pool, pool_players, [], eliminated, existing_picks, false, player_ranks, goalie_ranks) }}
+    </div>
+  {% endfor %}
+  </div>
+
+  <h5 class="fw-semibold text-muted mb-3">Goalies</h5>
+  <div class="row g-3 mb-4">
+  {% for pool in goalie_pools %}
+    {% set pool_goalies = goalies | selectattr('pool', 'equalto', pool) | list %}
+    <div class="col-12">
+      {{ pool_card(pool, [], pool_goalies, eliminated, existing_picks, false, player_ranks, goalie_ranks) }}
+    </div>
+  {% endfor %}
+  </div>
+
+  <!-- Submit -->
+  <div class="sticky-bottom bg-light border-top py-3">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="text-muted small" id="submit-hint">Complete all 22 picks and enter a team name to submit.</div>
+      <button id="submit-btn" class="btn btn-dark btn-lg px-5" disabled>
+        <i class="bi bi-check2-circle me-2"></i>Submit Team
+      </button>
+    </div>
+  </div>
+
+{% endif %}
+
+<!-- Hover card (always rendered) -->
+<div id="hover-card" class="position-fixed shadow-lg rounded bg-white border d-none"
+     style="z-index:9999; width:260px; pointer-events:none;">
+  <div class="p-2 text-center bg-dark rounded-top">
+    <img id="hc-logo" src="" class="team-logo mb-1" onerror="this.style.display='none'">
+  </div>
+  <div class="text-center p-2">
+    <img id="hc-headshot" src="" class="headshot-lg mb-2" onerror="this.style.display='none'">
+    <div id="hc-name" class="fw-bold small"></div>
+    <div id="hc-team-pos" class="text-muted small mb-1"></div>
+    <div id="hc-stats" class="small"></div>
+  </div>
+</div>
+
+<script>
+  const existingPicks = {{ existing_picks | tojson }};
+  const playoffsLocked = {{ 'true' if playoffs_locked else 'false' }};
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/draft.js') }}"></script>
+{% endblock %}

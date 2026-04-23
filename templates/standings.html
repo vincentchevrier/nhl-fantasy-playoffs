@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Player Standings — Fantasy Playoffs{% endblock %}
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-bar-chart-fill me-2"></i>Player Standings</h2>
+
+<ul class="nav nav-tabs mb-4" id="standingsTabs">
+  <li class="nav-item">
+    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#skaters-tab">
+      Skaters ({{ skaters|length }})
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#goalies-tab">
+      Goalies ({{ goalies|length }})
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="skaters-tab">
+    <div class="card shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 js-sortable">
+          <thead class="table-dark">
+            <tr>
+              <th data-sort="num">#</th>
+              <th data-sort="str">Name</th>
+              <th data-sort="str">Team</th>
+              <th data-sort="str">Pos</th>
+              <th data-sort="natural">Pool</th>
+              <th data-sort="num">G</th>
+              <th data-sort="num">A</th>
+              <th data-sort="num">FPts</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in skaters %}
+            <tr class="{% if p.is_eliminated %}table-secondary text-muted{% endif %}">
+              <td>{{ loop.index }}</td>
+              <td data-val="{{ p.name }}">
+                <img src="https://assets.nhle.com/mugs/nhl/20252026/{{ p.team }}/{{ p.id }}.png"
+                     class="headshot-sm me-2" onerror="this.style.display='none'">
+                {{ p.name }}
+                {% if p.is_eliminated %}<span class="badge bg-secondary ms-1">ELIM</span>{% endif %}
+              </td>
+              <td data-val="{{ p.team }}">
+                <img src="https://assets.nhle.com/logos/nhl/svg/{{ p.team }}_light.svg"
+                     class="team-logo-sm" onerror="this.style.display='none'">
+                {{ p.team }}
+              </td>
+              <td>{{ p.position }}</td>
+              <td data-val="{{ p.pool }}"><span class="badge bg-dark">{{ p.pool }}</span></td>
+              <td>{{ p.goals }}</td>
+              <td>{{ p.assists }}</td>
+              <td class="fw-bold">{{ p.fantasy_points }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane fade" id="goalies-tab">
+    <div class="card shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 js-sortable">
+          <thead class="table-dark">
+            <tr>
+              <th data-sort="num">#</th>
+              <th data-sort="str">Name</th>
+              <th data-sort="str">Team</th>
+              <th data-sort="natural">Pool</th>
+              <th data-sort="num">W</th>
+              <th data-sort="num">SO</th>
+              <th data-sort="num">FPts</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for g in goalies %}
+            <tr class="{% if g.is_eliminated %}table-secondary text-muted{% endif %}">
+              <td>{{ loop.index }}</td>
+              <td data-val="{{ g.name }}">
+                <img src="https://assets.nhle.com/mugs/nhl/20252026/{{ g.team }}/{{ g.id }}.png"
+                     class="headshot-sm me-2" onerror="this.style.display='none'">
+                {{ g.name }}
+                {% if g.is_eliminated %}<span class="badge bg-secondary ms-1">ELIM</span>{% endif %}
+              </td>
+              <td data-val="{{ g.team }}">
+                <img src="https://assets.nhle.com/logos/nhl/svg/{{ g.team }}_light.svg"
+                     class="team-logo-sm" onerror="this.style.display='none'">
+                {{ g.team }}
+              </td>
+              <td data-val="{{ g.pool }}"><span class="badge bg-dark">{{ g.pool }}</span></td>
+              <td>{{ g.wins }}</td>
+              <td>{{ g.shutouts }}</td>
+              <td class="fw-bold">{{ g.fantasy_points }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

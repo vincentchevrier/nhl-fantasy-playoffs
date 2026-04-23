@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Playoff Bracket — Fantasy Playoffs{% endblock %}
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-diagram-3-fill me-2"></i>Playoff Bracket</h2>
+
+{% if not rounds %}
+<div class="alert alert-warning">Could not load bracket data. Please try again later.</div>
+{% endif %}
+
+{% for round in rounds %}
+<div class="mb-5">
+  <h4 class="fw-semibold text-muted mb-3">
+    {% if loop.index == 1 %}First Round
+    {% elif loop.index == 2 %}Second Round
+    {% elif loop.index == 3 %}Conference Finals
+    {% elif loop.index == 4 %}Stanley Cup Final
+    {% else %}Round {{ loop.index }}
+    {% endif %}
+  </h4>
+  <div class="row g-3">
+    {% for series in round.series %}
+    {% set top = series.topSeed %}
+    {% set bot = series.bottomSeed %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-3">
+          <!-- Top seed -->
+          <div class="d-flex align-items-center mb-2
+               {% if bot.wins == 4 %}opacity-50{% endif %}">
+            {% if series.get('logo') %}
+            <img src="{{ series.logo }}" class="team-logo me-2" onerror="this.style.display='none'">
+            {% else %}
+            <img src="https://assets.nhle.com/logos/nhl/svg/{{ top.abbrev }}_light.svg"
+                 class="team-logo me-2" onerror="this.style.display='none'">
+            {% endif %}
+            <div class="flex-grow-1 fw-semibold">{{ top.abbrev }}</div>
+            <div class="badge bg-dark fs-6 px-3">{{ top.wins }}</div>
+            {% if top.wins == 4 %}<i class="bi bi-trophy-fill text-warning ms-2"></i>{% endif %}
+          </div>
+          <div class="text-center text-muted small my-1">vs</div>
+          <!-- Bottom seed -->
+          <div class="d-flex align-items-center mt-2
+               {% if top.wins == 4 %}opacity-50{% endif %}">
+            <img src="https://assets.nhle.com/logos/nhl/svg/{{ bot.abbrev }}_light.svg"
+                 class="team-logo me-2" onerror="this.style.display='none'">
+            <div class="flex-grow-1 fw-semibold">{{ bot.abbrev }}</div>
+            <div class="badge bg-dark fs-6 px-3">{{ bot.wins }}</div>
+            {% if bot.wins == 4 %}<i class="bi bi-trophy-fill text-warning ms-2"></i>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

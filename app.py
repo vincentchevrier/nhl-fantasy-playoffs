@@ -1,0 +1,97 @@
+import os
+from flask import Flask, redirect, url_for
+from flask_login import LoginManager, current_user
+from dotenv import load_dotenv
+from models import db, User, AppSetting
+
+load_dotenv()
+
+
+def create_app():
+    app = Flask(__name__)
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///fantasy_playoffs.db"
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    # Flask-Mail config
+    app.config["MAIL_SERVER"] = os.environ.get("MAIL_SERVER", "smtp.gmail.com")
+    app.config["MAIL_PORT"] = int(os.environ.get("MAIL_PORT", 587))
+    app.config["MAIL_USE_TLS"] = os.environ.get("MAIL_USE_TLS", "True") == "True"
+    app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME", "")
+    app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD", "")
+    app.config["MAIL_DEFAULT_SENDER"] = os.environ.get("MAIL_DEFAULT_SENDER", "")
+
+    db.init_app(app)
+
+    from flask_mail import Mail
+    Mail(app)
+
+    login_manager = LoginManager(app)
+    login_manager.login_view = "auth.login"
+    login_manager.login_message_category = "info"
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+
+    # Register blueprints
+    from routes.auth import auth_bp
+    from routes.draft import draft_bp
+    from routes.teams import teams_bp
+    from routes.standings import standings_bp
+    from routes.admin import admin_bp
+
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(draft_bp)
+    app.register_blueprint(teams_bp)
+    app.register_blueprint(standings_bp)
+    app.register_blueprint(admin_bp)
+
+    @app.route("/")
+    def index():
+        if current_user.is_authenticated:
+            return redirect(url_for("standings.dashboard"))
+        return redirect(url_for("auth.login"))
+
+    with app.app_context():
+        db.create_all()
+        _seed_defaults()
+
+    return app
+
+
+def _seed_defaults():
+    """Seed admin user and default app settings if not present."""
+    from models import User, AppSetting
+
+    # Seed admin
+    admin = User.query.filter_by(email="administrator").first()
+    if not admin:
+        admin = User(
+            email="administrator",
+            is_admin=True,
+            must_change_pw=False,
+        )
+        admin.set_password(os.environ.get("ADMIN_PASSWORD", "CHANGEME"))
+        db.session.add(admin)
+
+    # Seed app settings
+    defaults = {
+        "playoffs_started": "false",
+        "game_window_start": "",
+        "game_window_end": "",
+        "last_stats_refresh": "",
+    }
+    for key, value in defaults.items():
+        if not AppSetting.query.get(key):
+            db.session.add(AppSetting(key=key, value=value))
+
+    db.session.commit()
+
+
+if __name__ == "__main__":
+    app = create_app()
+    if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        from scheduler import create_scheduler
+        create_scheduler(app)
+    app.run(debug=True, host="0.0.0.0", port=8000)
