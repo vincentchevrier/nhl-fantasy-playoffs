@@ -118,4 +118,4 @@ if __name__ == "__main__":
     if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
         from scheduler import create_scheduler
         create_scheduler(app)
-    app.run(debug=True, host="0.0.0.0", port=8000)
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
