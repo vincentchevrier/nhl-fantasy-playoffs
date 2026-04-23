@@ -33,25 +33,20 @@
 <div class="bracket-scroll">
 <div class="bracket-wrap">
 
-  <!-- Column labels -->
+  <!-- Column labels — same 13-col grid as bracket body -->
   <div class="bracket-labels">
     <div class="blabel west-label">Western Conference</div>
-    <div class="blabel">&nbsp;</div>
-    <div class="blabel">&nbsp;</div>
     <div class="blabel center-label">Stanley Cup Final</div>
-    <div class="blabel">&nbsp;</div>
-    <div class="blabel">&nbsp;</div>
     <div class="blabel east-label">Eastern Conference</div>
   </div>
 
   <div class="bracket-round-labels">
-    <div class="brlabel">1st Round</div>
-    <div class="brlabel">Semifinals</div>
-    <div class="brlabel">Conf. Final</div>
-    <div class="brlabel">&nbsp;</div>
-    <div class="brlabel">Conf. Final</div>
-    <div class="brlabel">Semifinals</div>
-    <div class="brlabel">1st Round</div>
+    <div class="brlabel" style="grid-column:1">1st Round</div>
+    <div class="brlabel" style="grid-column:3">Semifinals</div>
+    <div class="brlabel" style="grid-column:5">Conf. Final</div>
+    <div class="brlabel" style="grid-column:9">Conf. Final</div>
+    <div class="brlabel" style="grid-column:11">Semifinals</div>
+    <div class="brlabel" style="grid-column:13">1st Round</div>
   </div>
 
   <!-- Bracket body -->
@@ -183,9 +178,9 @@
   margin-bottom: 4px;
 }
 .blabel { text-align: center; font-weight: 700; font-size: .8rem; padding: 2px 0 6px; }
-.west-label { color: #0d6efd; grid-column: 1 / 4; }
+.west-label  { color: #0d6efd; grid-column: 1 / 6; }
 .center-label { color: #ffc107; grid-column: 7; }
-.east-label { color: #dc3545; grid-column: 11 / 14; }
+.east-label  { color: #dc3545; grid-column: 9 / 14; }
 .brlabel { text-align: center; font-size: .7rem; color: #6c757d; padding-bottom: 6px; }
 
 /* ── Bracket body ── */
