@@ -2,8 +2,6 @@
 
 A web-based NHL fantasy hockey playoff pool tracker — the digital evolution of Collin's legendary Excel spreadsheet.
 
-Live at **https://fantasyplayoffs.cyclikal.com**
-
 Built with Flask + SQLite + Bootstrap 5, powered by the [nhl-api-py](https://github.com/coreyjs/nhl-api-py) NHL Stats API wrapper.
 
 ## How It Works
@@ -53,13 +51,7 @@ cp .env.example .env
 |---|---|
 | `SECRET_KEY` | Flask secret key (use a long random string in production) |
 | `ADMIN_PASSWORD` | Password for the `administrator` account |
-| `MAIL_SERVER` | SMTP server (e.g. `smtp.gmail.com`) |
-| `MAIL_PORT` | SMTP port (e.g. `587`) |
-| `MAIL_USE_TLS` | `True` or `False` |
-| `MAIL_USERNAME` | SMTP login username |
-| `MAIL_PASSWORD` | SMTP login password |
-| `MAIL_DEFAULT_SENDER` | From address for outgoing emails |
-| `SIGNUP_NOTIFY_EMAIL` | Address that receives new signup notifications |
+| `POOL_OWNER` | Name prefix for the site title (e.g. `Collin's`) |
 
 ### Run
 

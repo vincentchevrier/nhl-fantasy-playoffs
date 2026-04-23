@@ -35,3 +35,6 @@ nhl-api-py/
 # OS
 .DS_Store
 Thumbs.db
+
+# Project instructions (contains personal details)
+CLAUDE.md
