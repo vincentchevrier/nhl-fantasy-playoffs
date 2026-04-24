@@ -77,26 +77,26 @@ def toggle_playoffs():
 @login_required
 @admin_required
 def create_user():
-    email = request.form.get("email", "").strip().lower()
+    username = request.form.get("username", "").strip().lower()
     password = request.form.get("password", "").strip()
 
-    if not email or not password:
-        flash("Email and password are required.", "danger")
+    if not username or not password:
+        flash("Username and password are required.", "danger")
         return redirect(url_for("admin.admin"))
 
     if len(password) < 8:
         flash("Password must be at least 8 characters.", "danger")
         return redirect(url_for("admin.admin"))
 
-    if User.query.filter_by(email=email).first():
-        flash(f"A user with email '{email}' already exists.", "danger")
+    if User.query.filter_by(email=username).first():
+        flash(f"A user with username '{username}' already exists.", "danger")
         return redirect(url_for("admin.admin"))
 
-    user = User(email=email, must_change_pw=False, is_enabled=True)
+    user = User(email=username, must_change_pw=False, is_enabled=True)
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
-    flash(f"User '{email}' created successfully.", "success")
+    flash(f"User '{username}' created successfully.", "success")
     return redirect(url_for("admin.admin"))
 
 
@@ -128,7 +128,29 @@ def toggle_user(user_id):
     user.is_enabled = not user.is_enabled
     db.session.commit()
     status = "enabled" if user.is_enabled else "disabled"
-    flash(f"{user.email} {status}.", "success")
+    flash(f"'{user.email}' {status}.", "success")
+    return redirect(url_for("admin.admin"))
+
+
+@admin_bp.route("/admin/rename-user/<int:user_id>", methods=["POST"])
+@login_required
+@admin_required
+def rename_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.email == "administrator":
+        flash("Cannot rename the administrator account.", "danger")
+        return redirect(url_for("admin.admin"))
+    new_username = request.form.get("username", "").strip().lower()
+    if not new_username:
+        flash("Username cannot be empty.", "danger")
+        return redirect(url_for("admin.admin"))
+    if User.query.filter(User.email == new_username, User.id != user_id).first():
+        flash(f"Username '{new_username}' is already taken.", "danger")
+        return redirect(url_for("admin.admin"))
+    old = user.email
+    user.email = new_username
+    db.session.commit()
+    flash(f"Username changed from '{old}' to '{new_username}'.", "success")
     return redirect(url_for("admin.admin"))
 
 
@@ -148,5 +170,5 @@ def delete_user(user_id):
     FantasyTeam.query.filter_by(user_id=user_id).delete()
     db.session.delete(user)
     db.session.commit()
-    flash(f"User {user.email} deleted.", "success")
+    flash(f"User '{user.email}' deleted.", "success")
     return redirect(url_for("admin.admin"))

@@ -11,12 +11,12 @@ def signup():
         return redirect(url_for("standings.dashboard"))
 
     if request.method == "POST":
-        email = request.form.get("email", "").strip().lower()
+        email = request.form.get("username", "").strip().lower()
         password = request.form.get("password", "")
         confirm = request.form.get("confirm_password", "")
 
         if not email or not password:
-            flash("Email and password are required.", "danger")
+            flash("Username and password are required.", "danger")
             return render_template("auth/signup.html")
 
         if len(password) < 8:
@@ -28,7 +28,7 @@ def signup():
             return render_template("auth/signup.html")
 
         if User.query.filter_by(email=email).first():
-            flash("An account with that email already exists.", "danger")
+            flash("An account with that username already exists.", "danger")
             return render_template("auth/signup.html")
 
         user = User(email=email, must_change_pw=False, is_enabled=False)
@@ -48,12 +48,12 @@ def login():
         return redirect(url_for("standings.dashboard"))
 
     if request.method == "POST":
-        email = request.form.get("email", "").strip().lower()
+        email = request.form.get("username", "").strip().lower()
         password = request.form.get("password", "")
         user = User.query.filter_by(email=email).first()
 
         if not user or not user.check_password(password):
-            flash("Invalid email or password.", "danger")
+            flash("Invalid username or password.", "danger")
             return render_template("auth/login.html")
 
         if not user.is_enabled:
