@@ -119,7 +119,10 @@ def _seed_defaults():
         if not AppSetting.query.get(key):
             db.session.add(AppSetting(key=key, value=value))
 
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
 
 if __name__ == "__main__":
