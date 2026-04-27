@@ -41,9 +41,13 @@ def admin():
 @admin_required
 def refresh_stats():
     from flask import current_app
-    from scheduler import refresh_playoff_stats, save_snapshots
+    from refresh import _refresh_stats, _fetch_schedule
+    from models import AppSetting
     try:
-        refresh_playoff_stats(current_app._get_current_object())
+        app = current_app._get_current_object()
+        with app.app_context():
+            _fetch_schedule(app, AppSetting)
+            _refresh_stats(app, AppSetting)
         flash("Stats refreshed successfully.", "success")
     except Exception as e:
         flash(f"Error refreshing stats: {e}", "danger")

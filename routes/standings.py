@@ -1,22 +1,9 @@
 import json
-import threading
-from flask import Blueprint, render_template, redirect, url_for, current_app
+from flask import Blueprint, render_template, redirect, url_for
 from flask_login import login_required, current_user
 from models import Player, Goalie, PlayoffSkaterStats, PlayoffGoalieStats, EliminatedTeam, FantasyTeam, PointsSnapshot, AppSetting
 
 standings_bp = Blueprint("standings", __name__)
-
-
-def _maybe_trigger_refresh():
-    """Spawn a background refresh if we're in the game window and cooldown has elapsed."""
-    from scheduler import should_page_refresh, refresh_playoff_stats
-    try:
-        if should_page_refresh(AppSetting):
-            app = current_app._get_current_object()
-            t = threading.Thread(target=refresh_playoff_stats, args=[app], daemon=True)
-            t.start()
-    except Exception as e:
-        current_app.logger.warning(f"Page-load refresh trigger failed: {e}")
 
 
 def _team_total(fantasy_team, elim_set):
@@ -36,7 +23,6 @@ def _team_total(fantasy_team, elim_set):
 @standings_bp.route("/standings")
 @login_required
 def standings():
-    _maybe_trigger_refresh()
     elim_set = {e.team_abbr for e in EliminatedTeam.query.all()}
 
     # All pooled skaters with playoff stats
@@ -211,7 +197,6 @@ def picks_summary():
 @standings_bp.route("/dashboard")
 @login_required
 def dashboard():
-    _maybe_trigger_refresh()
     elim_set = {e.team_abbr for e in EliminatedTeam.query.all()}
     all_teams = FantasyTeam.query.all()
     ranked = sorted(all_teams, key=lambda t: _team_total(t, elim_set), reverse=True)

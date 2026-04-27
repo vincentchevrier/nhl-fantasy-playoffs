@@ -52,6 +52,14 @@ def create_app():
         pool_owner = os.environ.get("POOL_OWNER", "Collin's")
         return {"pool_owner": pool_owner}
 
+    @app.after_request
+    def trigger_refresh(response):
+        from flask_login import current_user
+        if current_user.is_authenticated:
+            from refresh import maybe_refresh
+            maybe_refresh(app)
+        return response
+
     @app.route("/")
     def index():
         if current_user.is_authenticated:
@@ -105,6 +113,7 @@ def _seed_defaults():
         "game_window_start": "",
         "game_window_end": "",
         "last_stats_refresh": "",
+        "last_schedule_check": "",
     }
     for key, value in defaults.items():
         if not AppSetting.query.get(key):
@@ -115,7 +124,4 @@ def _seed_defaults():
 
 if __name__ == "__main__":
     app = create_app()
-    if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
-        from scheduler import create_scheduler
-        create_scheduler(app)
     app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
