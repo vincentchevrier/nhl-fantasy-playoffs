@@ -115,15 +115,35 @@ def bracket():
         m = {s["seriesLetter"]: s for s in series_list}
         return [m.get(l) for l in letters]
 
+    def r1_teams(s):
+        """Return the set of team abbrevs from an R1 series."""
+        if not s:
+            return set()
+        return {s.get("topSeed", {}).get("abbrev"), s.get("bottomSeed", {}).get("abbrev")} - {None}
+
+    def find_r2(r2_list, s1, s2):
+        """Find the R2 series whose teams came from R1 series s1 and s2."""
+        pool = r1_teams(s1) | r1_teams(s2)
+        for s in r2_list:
+            if not s:
+                continue
+            teams = {s.get("topSeed", {}).get("abbrev"), s.get("bottomSeed", {}).get("abbrev")} - {None}
+            if teams & pool:
+                return s
+        return None
+
+    west_r1 = by_letter(r1, "E", "F", "G", "H")
+    east_r1 = by_letter(r1, "A", "B", "C", "D")
+
     bracket = {
         "west": {
-            "r1": by_letter(r1, "E", "F", "G", "H"),
-            "r2": r2[:2] if r2 else [None, None],
+            "r1": west_r1,
+            "r2": [find_r2(r2, west_r1[0], west_r1[1]), find_r2(r2, west_r1[2], west_r1[3])],
             "cf": r3[0] if r3 else None,
         },
         "east": {
-            "r1": by_letter(r1, "A", "B", "C", "D"),
-            "r2": r2[2:4] if len(r2) >= 4 else [None, None],
+            "r1": east_r1,
+            "r2": [find_r2(r2, east_r1[0], east_r1[1]), find_r2(r2, east_r1[2], east_r1[3])],
             "cf": r3[1] if len(r3) >= 2 else None,
         },
         "scf": r4[0] if r4 else None,
