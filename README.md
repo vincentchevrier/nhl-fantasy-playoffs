@@ -17,19 +17,21 @@ All 16 playoff teams' rosters are pulled at the start of the playoffs. Players a
 Each participant drafts **22 players** — one from each pool. Fantasy points are accumulated from playoff stats only:
 
 - **Skaters:** Goals × 2 + Assists
-- **Goalies:** Win × 2 + Shutouts × 2 (win = 2pts, shutout win = 4pts total)
+- **Goalies:** Win × 2 + Shutout win × 2 (win = 2 pts, shutout win = 4 pts total)
 
 ## Features
 
-- User signup/login with forced password change on first login
-- Interactive draft page with player hover cards (headshots, team logos, stats)
+- User signup/login with admin approval flow; forced password change on first login
+- Interactive draft page with player hover cards (headshots, team logos, regular season stats)
 - Draft locks automatically when admin starts the playoffs
 - Live standings with sortable skater and goalie tables
 - Per-team roster view with fantasy points breakdown
-- Playoff bracket visualization
+- **Who Took Who** page — grid of all participants × all 22 pools, highlights shared picks
+- Playoff bracket visualization (responsive NHL-style layout)
 - Interactive points-over-time chart on the dashboard (Plotly)
-- Schedule-aware stat refresh: nightly job + live 5-minute polling during game windows
-- Admin panel: manage users, seed pools, toggle playoff state, force stat refresh
+- Page-load driven stat refresh: schedule checked every 24h, stats pulled every 5 min during live game windows and every 24h otherwise — no background scheduler required
+- Player hover cards on draft, standings, and roster pages
+- Admin panel: manage users (create, enable/disable, rename, delete), seed pools, toggle playoff state, force stat refresh
 
 ## Local Development
 
@@ -56,10 +58,11 @@ cp .env.example .env
 ### Run
 
 ```
-python app.py
+python3 app.py          # port 8000 by default
+PORT=8001 python3 app.py  # override port
 ```
 
-The app starts on port 8000. Log in with username `administrator` and the password set in `ADMIN_PASSWORD`.
+Log in with username `administrator` and the password set in `ADMIN_PASSWORD`.
 
 ## Deployment
 
@@ -67,7 +70,7 @@ The app runs on a DigitalOcean droplet behind Nginx with a Let's Encrypt TLS cer
 
 ### Deploying changes
 
-```
+```bash
 # 1. Make and test changes locally
 git commit -m "..."
 git push
@@ -92,30 +95,32 @@ systemctl restart fantasy-playoffs
 ## Admin Workflow
 
 1. Log in as `administrator`
-2. Click **Seed Pools from NHL API** — fetches current playoff rosters and bins players into pools (can also be run via `python setup_pools.py`)
+2. Click **Seed Pools from NHL API** — fetches current playoff rosters and bins players into pools
 3. Direct users to `/signup` to request access, or create accounts directly from the Admin panel
-4. Users draft their 22 players before the playoffs begin
-5. Toggle **Start Playoffs & Lock Draft** — this locks all submitted teams
-6. Stats refresh nightly at 2 AM ET; the scheduler also polls every 5 minutes during live game windows
+4. New accounts start disabled — enable them from the user table
+5. Users draft their 22 players before the playoffs begin
+6. Toggle **Start Playoffs & Lock Draft** — locks all submitted teams
+7. Stats update automatically on page load: every 5 min during live games, every 24h otherwise
 
 ## Project Structure
 
 ```
-app.py              # App factory, blueprint registration, scheduler guard
+app.py              # App factory, blueprint registration, after_request refresh hook
 models.py           # SQLAlchemy models
-setup_pools.py      # Pool seeding (CLI or called from admin panel)
-scheduler.py        # Nightly + live-window stat refresh jobs
+refresh.py          # Page-load driven stat refresh logic (schedule check + stats pull)
+setup_pools.py      # Pool seeding (called from admin panel)
 playoff_stats.py    # Fetches and ranks playoff rosters from NHL API
 routes/
   auth.py           # signup, login, logout, change-password
   draft.py          # Draft page and pick submission
   teams.py          # Team list and team detail
-  standings.py      # Dashboard, standings, bracket, about
+  standings.py      # Dashboard, standings, bracket, about, who-took-who
   admin.py          # Admin panel and actions
 templates/          # Jinja2 HTML templates (Bootstrap 5)
 static/
   css/style.css
-  js/draft.js       # Draft pick state, hover cards, AJAX submit
+  js/draft.js       # Draft pick state, AJAX submit
+  js/hovercard.js   # Shared player hover card (draft, standings, roster pages)
   js/sortable.js    # Generic click-to-sort table handler
 ```
 
