@@ -92,7 +92,7 @@
                 {% set info = game.fantasy_counts[team.id] %}
                 <div class="d-flex justify-content-between">
                   <span class="text-muted text-truncate">{{ info.name }}</span>
-                  <span class="fw-semibold ms-2">{{ info.count }} player{{ 's' if info.count != 1 }}</span>
+                  <span class="fw-semibold ms-2">{{ info.count }} player{{ 's' if info.count != 1 }}{% if info.pts %} · {{ info.pts }} pt{{ 's' if info.pts != 1 }}{% endif %}</span>
                 </div>
               {% endif %}
             {% endfor %}

@@ -268,31 +268,61 @@ def dashboard():
         result = client.game_center.daily_scores()
         raw_games = result.get("games", [])
 
-        # Build lookup: team_abbrev -> set of fantasy_team_ids with players on that NHL team
+        # Build lookup: player_id/goalie_id -> team_abbrev
         from models import Player, Goalie, FantasyPick
-        player_team = {}   # player_id -> team_abbrev
-        goalie_team = {}   # goalie_id -> team_abbrev
-        for p in Player.query.all():
-            player_team[p.id] = p.team
-        for g in Goalie.query.all():
-            goalie_team[g.id] = g.team
+        player_team = {p.id: p.team for p in Player.query.all()}
+        goalie_team = {g.id: g.team for g in Goalie.query.all()}
 
-        # Build per-game fantasy counts: game_id -> {fantasy_team_id: count}
         for g in raw_games:
             away_abbrev = g.get("awayTeam", {}).get("abbrev", "")
             home_abbrev = g.get("homeTeam", {}).get("abbrev", "")
             game_teams = {away_abbrev, home_abbrev}
+            game_state = g.get("gameState", "FUT")
 
+            # --- Skater points in this game from goals array ---
+            skater_game_pts = {}  # player_id -> pts
+            for goal in g.get("goals", []):
+                scorer_id = goal.get("playerId")
+                if scorer_id:
+                    skater_game_pts[scorer_id] = skater_game_pts.get(scorer_id, 0) + 2
+                for assist in goal.get("assists", []):
+                    assist_id = assist.get("playerId")
+                    if assist_id:
+                        skater_game_pts[assist_id] = skater_game_pts.get(assist_id, 0) + 1
+
+            # --- Goalie points in this game from boxscore ---
+            goalie_game_pts = {}  # goalie_id -> pts
+            if game_state not in ("FUT", "PRE"):
+                try:
+                    bs = client.game_center.boxscore(game_id=str(g["id"]))
+                    pg = bs.get("playerByGameStats", {})
+                    for side in ("awayTeam", "homeTeam"):
+                        for gl in pg.get(side, {}).get("goalies", []):
+                            gid = gl.get("playerId")
+                            decision = gl.get("decision", "")
+                            goals_against = gl.get("goalsAgainst", 1)
+                            if decision == "W":
+                                pts = 2  # win
+                                if goals_against == 0:
+                                    pts += 2  # shutout
+                                goalie_game_pts[gid] = pts
+                except Exception:
+                    pass
+
+            # --- Per fantasy team: count players + sum game points ---
             fantasy_counts = {}
             for ft in all_teams:
                 count = 0
+                pts = 0
                 for pick in ft.picks:
                     if pick.player_id and player_team.get(pick.player_id) in game_teams:
                         count += 1
+                        pts += skater_game_pts.get(pick.player_id, 0)
                     elif pick.goalie_id and goalie_team.get(pick.goalie_id) in game_teams:
                         count += 1
+                        pts += goalie_game_pts.get(pick.goalie_id, 0)
                 if count > 0:
-                    fantasy_counts[ft.id] = {"name": ft.name, "count": count}
+                    fantasy_counts[ft.id] = {"name": ft.name, "count": count, "pts": pts}
 
             # Format start time in ET
             start_time_display = ""
