@@ -330,9 +330,8 @@
   margin: auto 0;
 }
 
-/* Dark mode friendly */
-@media (prefers-color-scheme: dark) {
-  .series-card { background: #2b2d2f; border-color: #444; }
-}
+/* Always light regardless of system dark mode */
+.series-card { background: #fff !important; border-color: #dee2e6 !important; color: #212529 !important; }
+.series-tbd  { background: #f8f9fa !important; }
 </style>
 {% endblock %}
