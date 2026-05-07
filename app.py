@@ -52,13 +52,20 @@ def create_app():
         pool_owner = os.environ.get("POOL_OWNER", "Collin's")
         return {"pool_owner": pool_owner}
 
-    @app.after_request
-    def trigger_refresh(response):
+    @app.before_request
+    def trigger_refresh():
+        from flask import request as req
+        if req.endpoint == "static":
+            return
         from flask_login import current_user
         if current_user.is_authenticated:
-            from refresh import maybe_refresh
-            maybe_refresh(app)
-        return response
+            from refresh import _maybe_update_schedule, _maybe_refresh_stats
+            from models import AppSetting
+            try:
+                _maybe_update_schedule(app, AppSetting)
+                _maybe_refresh_stats(app, AppSetting)
+            except Exception as e:
+                app.logger.warning(f"[refresh] Refresh error: {e}")
 
     @app.route("/")
     def index():
