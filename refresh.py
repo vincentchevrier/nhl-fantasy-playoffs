@@ -201,6 +201,124 @@ def _save_snapshots(app):
     db.session.commit()
 
 
+def backfill_snapshots(app):
+    """Backfill missing PointsSnapshot rows using per-game playoff logs.
+
+    For each date from the first playoff game to yesterday, calculates each
+    team's accurate cumulative fantasy points and inserts any missing snapshot.
+    Already-calculated dates are skipped.
+    """
+    from models import db, FantasyTeam, FantasyPick, PointsSnapshot
+    try:
+        from nhlpy import NHLClient
+        client = NHLClient()
+        season = "20252026"
+
+        # Collect all drafted player/goalie IDs
+        all_picks = FantasyPick.query.all()
+        player_ids = {p.player_id for p in all_picks if p.player_id}
+        goalie_ids = {p.goalie_id for p in all_picks if p.goalie_id}
+
+        # Fetch game logs — build {id: sorted list of (date_str, cumulative_stat)}
+        # For skaters: cumulative (goals, assists) after each game date
+        # For goalies: cumulative (wins, shutouts) after each game date
+        player_logs = {}   # player_id -> [(date_str, cum_goals, cum_assists), ...]
+        goalie_logs = {}   # goalie_id -> [(date_str, cum_wins, cum_shutouts), ...]
+
+        for pid in player_ids:
+            try:
+                games = client.stats.player_game_log(pid, season_id=season, game_type=3)
+                games = sorted(games, key=lambda g: g.get("gameDate", ""))
+                cum_g, cum_a = 0, 0
+                entries = []
+                for game in games:
+                    d = game.get("gameDate")
+                    if not d:
+                        continue
+                    cum_g += game.get("goals", 0)
+                    cum_a += game.get("assists", 0)
+                    entries.append((d, cum_g, cum_a))
+                player_logs[pid] = entries
+            except Exception:
+                player_logs[pid] = []
+
+        for gid in goalie_ids:
+            try:
+                games = client.stats.player_game_log(gid, season_id=season, game_type=3)
+                games = sorted(games, key=lambda g: g.get("gameDate", ""))
+                cum_w, cum_so = 0, 0
+                entries = []
+                for game in games:
+                    d = game.get("gameDate")
+                    if not d:
+                        continue
+                    cum_w += 1 if game.get("decision") == "W" else 0
+                    cum_so += game.get("shutouts", 0)
+                    entries.append((d, cum_w, cum_so))
+                goalie_logs[gid] = entries
+            except Exception:
+                goalie_logs[gid] = []
+
+        # Find the date range: first game date → yesterday
+        all_dates = [e[0] for logs in player_logs.values() for e in logs] + \
+                    [e[0] for logs in goalie_logs.values() for e in logs]
+        if not all_dates:
+            app.logger.info("[backfill] No playoff game log data found.")
+            return
+
+        first_date = date.fromisoformat(min(all_dates))
+        yesterday = date.today() - timedelta(days=1)
+
+        def stats_as_of(entries, target_date_str):
+            """Return the last cumulative entry on or before target_date_str."""
+            result = entries[0][1:] if entries else None
+            result = None
+            for entry in entries:
+                if entry[0] <= target_date_str:
+                    result = entry[1:]
+                else:
+                    break
+            return result
+
+        # Find existing snapshot dates per team to skip already-calculated ones
+        all_teams = FantasyTeam.query.all()
+        existing = {}  # team_id -> set of date objects
+        for snap in PointsSnapshot.query.all():
+            existing.setdefault(snap.fantasy_team_id, set()).add(snap.date)
+
+        inserted = 0
+        cur = first_date
+        while cur <= yesterday:
+            cur_str = cur.isoformat()
+            for team in all_teams:
+                team_start = team.submitted_at.date() if team.submitted_at else first_date
+                if cur < team_start:
+                    continue
+                if cur in existing.get(team.id, set()):
+                    continue
+
+                total = 0
+                for pick in team.picks:
+                    if pick.player_id:
+                        entry = stats_as_of(player_logs.get(pick.player_id, []), cur_str)
+                        if entry:
+                            total += entry[0] * 2 + entry[1]  # goals*2 + assists
+                    elif pick.goalie_id:
+                        entry = stats_as_of(goalie_logs.get(pick.goalie_id, []), cur_str)
+                        if entry:
+                            total += entry[0] * 2 + entry[1] * 2  # wins*2 + shutouts*2
+
+                db.session.add(PointsSnapshot(fantasy_team_id=team.id, date=cur, points=total))
+                inserted += 1
+
+            cur += timedelta(days=1)
+
+        db.session.commit()
+        app.logger.info(f"[backfill] Inserted {inserted} missing snapshots.")
+    except Exception as e:
+        app.logger.warning(f"[backfill] Failed: {e}")
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _get_setting(AppSetting, key):

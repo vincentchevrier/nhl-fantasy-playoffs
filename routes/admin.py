@@ -41,14 +41,15 @@ def admin():
 @admin_required
 def refresh_stats():
     from flask import current_app
-    from refresh import _refresh_stats, _fetch_schedule
+    from refresh import _refresh_stats, _fetch_schedule, backfill_snapshots
     from models import AppSetting
     try:
         app = current_app._get_current_object()
         with app.app_context():
             _fetch_schedule(app, AppSetting)
             _refresh_stats(app, AppSetting)
-        flash("Stats refreshed successfully.", "success")
+            backfill_snapshots(app)
+        flash("Stats refreshed and historical snapshots backfilled.", "success")
     except Exception as e:
         flash(f"Error refreshing stats: {e}", "danger")
     return redirect(url_for("admin.admin"))
