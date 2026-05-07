@@ -217,6 +217,9 @@ def picks_summary():
 @standings_bp.route("/dashboard")
 @login_required
 def dashboard():
+    from datetime import date, datetime, timezone, timedelta
+    from collections import defaultdict
+
     elim_set = {e.team_abbr for e in EliminatedTeam.query.all()}
     all_teams = FantasyTeam.query.all()
     ranked = sorted(all_teams, key=lambda t: _team_total(t, elim_set), reverse=True)
@@ -238,8 +241,6 @@ def dashboard():
         .all()
     )
 
-    # Group by team
-    from collections import defaultdict
     team_dates = defaultdict(list)
     team_points = defaultdict(list)
     for snap in all_snapshots:
@@ -259,6 +260,94 @@ def dashboard():
                 "team_id": team.id,
             })
 
+    # Today's games
+    today_games = []
+    try:
+        from nhlpy import NHLClient
+        client = NHLClient()
+        result = client.game_center.daily_scores(date=date.today().isoformat())
+        raw_games = result.get("games", [])
+
+        # Build lookup: team_abbrev -> set of fantasy_team_ids with players on that NHL team
+        from models import Player, Goalie, FantasyPick
+        player_team = {}   # player_id -> team_abbrev
+        goalie_team = {}   # goalie_id -> team_abbrev
+        for p in Player.query.all():
+            player_team[p.id] = p.team
+        for g in Goalie.query.all():
+            goalie_team[g.id] = g.team
+
+        # Build per-game fantasy counts: game_id -> {fantasy_team_id: count}
+        for g in raw_games:
+            away_abbrev = g.get("awayTeam", {}).get("abbrev", "")
+            home_abbrev = g.get("homeTeam", {}).get("abbrev", "")
+            game_teams = {away_abbrev, home_abbrev}
+
+            fantasy_counts = {}
+            for ft in all_teams:
+                count = 0
+                for pick in ft.picks:
+                    if pick.player_id and player_team.get(pick.player_id) in game_teams:
+                        count += 1
+                    elif pick.goalie_id and goalie_team.get(pick.goalie_id) in game_teams:
+                        count += 1
+                if count > 0:
+                    fantasy_counts[ft.id] = {"name": ft.name, "count": count}
+
+            # Format start time in ET
+            start_time_display = ""
+            start_utc = g.get("startTimeUTC", "")
+            if start_utc:
+                try:
+                    dt = datetime.fromisoformat(start_utc.replace("Z", "+00:00"))
+                    et_offset = g.get("easternUTCOffset", "-04:00")
+                    hours = int(et_offset.split(":")[0])
+                    dt_et = dt + timedelta(hours=hours)
+                    start_time_display = dt_et.strftime("%-I:%M %p ET")
+                except Exception:
+                    start_time_display = start_utc
+
+            # Period label
+            period_desc = g.get("periodDescriptor", {})
+            period_num = period_desc.get("number", 0)
+            period_type = period_desc.get("periodType", "REG")
+            if period_type == "OT":
+                period_label = "OT"
+            elif period_type == "SO":
+                period_label = "SO"
+            else:
+                period_label = {1: "1st", 2: "2nd", 3: "3rd"}.get(period_num, f"P{period_num}")
+
+            clock = g.get("clock") or {}
+            in_intermission = clock.get("inIntermission", False)
+            time_remaining = clock.get("timeRemaining", "")
+
+            state = g.get("gameState", "FUT")
+            # Normalize finished states
+            if state in ("OFF", "FINAL"):
+                state = "FINAL"
+
+            today_games.append({
+                "state": state,
+                "start_time": start_time_display,
+                "away": {
+                    "abbrev": away_abbrev,
+                    "logo": g.get("awayTeam", {}).get("logo", ""),
+                    "score": g.get("awayTeam", {}).get("score"),
+                },
+                "home": {
+                    "abbrev": home_abbrev,
+                    "logo": g.get("homeTeam", {}).get("logo", ""),
+                    "score": g.get("homeTeam", {}).get("score"),
+                },
+                "period_label": period_label,
+                "in_intermission": in_intermission,
+                "time_remaining": time_remaining,
+                "fantasy_counts": fantasy_counts,
+            })
+    except Exception:
+        today_games = []
+
     return render_template(
         "dashboard.html",
         user_team=user_team,
@@ -266,4 +355,6 @@ def dashboard():
         user_total=user_total,
         total_teams=len(ranked),
         chart_traces=json.dumps(chart_traces),
+        today_games=today_games,
+        all_teams=ranked,
     )
