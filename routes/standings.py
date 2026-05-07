@@ -265,7 +265,7 @@ def dashboard():
     try:
         from nhlpy import NHLClient
         client = NHLClient()
-        result = client.game_center.daily_scores(date=date.today().isoformat())
+        result = client.game_center.daily_scores()
         raw_games = result.get("games", [])
 
         # Build lookup: team_abbrev -> set of fantasy_team_ids with players on that NHL team
