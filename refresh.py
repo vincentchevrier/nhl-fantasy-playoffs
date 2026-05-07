@@ -319,6 +319,129 @@ def backfill_snapshots(app):
         app.logger.warning(f"[backfill] Failed: {e}")
 
 
+# ── Today's games cache ───────────────────────────────────────────────────────
+
+def refresh_today_games(app):
+    """Fetch today's games from NHL API and cache in AppSetting as JSON.
+
+    Skater points come from the goals array in daily_scores (no extra call).
+    Goalie points come from boxscore (one call per started game).
+    """
+    import json
+    from models import db, AppSetting
+
+    try:
+        from nhlpy import NHLClient
+        client = NHLClient()
+        result = client.game_center.daily_scores()
+        raw_games = result.get("games", [])
+        nhl_date = result.get("currentDate", "")
+
+        games_out = []
+        for g in raw_games:
+            away = g.get("awayTeam", {})
+            home = g.get("homeTeam", {})
+            game_state = g.get("gameState", "FUT")
+
+            # Skater points from goals array
+            skater_game_pts = {}
+            for goal in g.get("goals", []):
+                sid = goal.get("playerId")
+                if sid:
+                    skater_game_pts[sid] = skater_game_pts.get(sid, 0) + 2
+                for assist in goal.get("assists", []):
+                    aid = assist.get("playerId")
+                    if aid:
+                        skater_game_pts[aid] = skater_game_pts.get(aid, 0) + 1
+
+            # Goalie points from boxscore (only when game has started)
+            goalie_game_pts = {}
+            if game_state not in ("FUT", "PRE"):
+                try:
+                    bs = client.game_center.boxscore(game_id=str(g["id"]))
+                    pg = bs.get("playerByGameStats", {})
+                    for side in ("awayTeam", "homeTeam"):
+                        for gl in pg.get(side, {}).get("goalies", []):
+                            gid = gl.get("playerId")
+                            if gl.get("decision") == "W":
+                                pts = 2
+                                if gl.get("goalsAgainst", 1) == 0:
+                                    pts += 2
+                                goalie_game_pts[gid] = pts
+                except Exception:
+                    pass
+
+            # Format start time in ET
+            start_time_display = ""
+            start_utc = g.get("startTimeUTC", "")
+            if start_utc:
+                try:
+                    dt = datetime.fromisoformat(start_utc.replace("Z", "+00:00"))
+                    et_offset = g.get("easternUTCOffset", "-04:00")
+                    hours = int(et_offset.split(":")[0])
+                    dt_et = dt + timedelta(hours=hours)
+                    start_time_display = dt_et.strftime("%-I:%M %p ET")
+                except Exception:
+                    start_time_display = start_utc
+
+            period_desc = g.get("periodDescriptor", {})
+            period_num = period_desc.get("number", 0)
+            period_type = period_desc.get("periodType", "REG")
+            if period_type == "OT":
+                period_label = "OT"
+            elif period_type == "SO":
+                period_label = "SO"
+            else:
+                period_label = {1: "1st", 2: "2nd", 3: "3rd"}.get(period_num, f"P{period_num}")
+
+            clock = g.get("clock") or {}
+            normalized_state = "FINAL" if game_state in ("OFF", "FINAL") else game_state
+
+            games_out.append({
+                "state": normalized_state,
+                "start_time": start_time_display,
+                "away": {"abbrev": away.get("abbrev", ""), "logo": away.get("logo", ""), "score": away.get("score")},
+                "home": {"abbrev": home.get("abbrev", ""), "logo": home.get("logo", ""), "score": home.get("score")},
+                "period_label": period_label,
+                "in_intermission": clock.get("inIntermission", False),
+                "time_remaining": clock.get("timeRemaining", ""),
+                "skater_game_pts": skater_game_pts,
+                "goalie_game_pts": goalie_game_pts,
+            })
+
+        _set_setting(db, AppSetting, "today_games_cache", json.dumps(games_out))
+        _set_setting(db, AppSetting, "today_games_date", nhl_date)
+        _set_setting(db, AppSetting, "today_games_cache_at", datetime.now(timezone.utc).isoformat())
+        db.session.commit()
+        app.logger.info(f"[refresh] Today's games cached: {len(games_out)} game(s) for {nhl_date}.")
+    except Exception as e:
+        app.logger.warning(f"[refresh] Today's games cache failed: {e}")
+
+
+def maybe_refresh_today_games(app, AppSetting):
+    """Refresh today's games cache if stale.
+
+    TTL is 2 minutes when any game is live, 15 minutes otherwise.
+    """
+    import json
+    cache_at = _get_setting(AppSetting, "today_games_cache_at")
+    age = _age_minutes(cache_at) if cache_at else float("inf")
+
+    # Determine TTL based on whether any game is currently live
+    cached = _get_setting(AppSetting, "today_games_cache")
+    has_live = False
+    if cached:
+        try:
+            games = json.loads(cached)
+            has_live = any(g.get("state") in ("LIVE", "CRIT", "PRE") for g in games)
+        except Exception:
+            pass
+
+    ttl = 2 if has_live else 15
+    if age >= ttl:
+        refresh_today_games(app)
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _get_setting(AppSetting, key):

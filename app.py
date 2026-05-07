@@ -121,6 +121,9 @@ def _seed_defaults():
         "game_window_end": "",
         "last_stats_refresh": "",
         "last_schedule_check": "",
+        "today_games_cache": "",
+        "today_games_cache_at": "",
+        "today_games_date": "",
     }
     for key, value in defaults.items():
         if not AppSetting.query.get(key):

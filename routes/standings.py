@@ -217,7 +217,6 @@ def picks_summary():
 @standings_bp.route("/dashboard")
 @login_required
 def dashboard():
-    from datetime import date, datetime, timezone, timedelta
     from collections import defaultdict
 
     elim_set = {e.team_abbr for e in EliminatedTeam.query.all()}
@@ -260,56 +259,31 @@ def dashboard():
                 "team_id": team.id,
             })
 
-    # Today's games
+    # Today's games — read from cache, refresh if stale
     today_games = []
     try:
-        from nhlpy import NHLClient
-        client = NHLClient()
-        result = client.game_center.daily_scores()
-        raw_games = result.get("games", [])
+        import json as _json
+        from flask import current_app
+        from refresh import maybe_refresh_today_games
+        maybe_refresh_today_games(current_app._get_current_object(), AppSetting)
 
-        # Build lookup: player_id/goalie_id -> team_abbrev
-        from models import Player, Goalie, FantasyPick
+        cached = AppSetting.query.get("today_games_cache")
+        raw_cached = cached.value if cached and cached.value else "[]"
+        cached_games = _json.loads(raw_cached)
+
+        # Build lookup: player_id/goalie_id -> team_abbrev (int keys)
+        from models import Player, Goalie
         player_team = {p.id: p.team for p in Player.query.all()}
         goalie_team = {g.id: g.team for g in Goalie.query.all()}
 
-        for g in raw_games:
-            away_abbrev = g.get("awayTeam", {}).get("abbrev", "")
-            home_abbrev = g.get("homeTeam", {}).get("abbrev", "")
+        for g in cached_games:
+            away_abbrev = g["away"]["abbrev"]
+            home_abbrev = g["home"]["abbrev"]
             game_teams = {away_abbrev, home_abbrev}
-            game_state = g.get("gameState", "FUT")
+            # Keys in JSON are strings; convert back to int for lookup
+            skater_pts = {int(k): v for k, v in g.get("skater_game_pts", {}).items()}
+            goalie_pts = {int(k): v for k, v in g.get("goalie_game_pts", {}).items()}
 
-            # --- Skater points in this game from goals array ---
-            skater_game_pts = {}  # player_id -> pts
-            for goal in g.get("goals", []):
-                scorer_id = goal.get("playerId")
-                if scorer_id:
-                    skater_game_pts[scorer_id] = skater_game_pts.get(scorer_id, 0) + 2
-                for assist in goal.get("assists", []):
-                    assist_id = assist.get("playerId")
-                    if assist_id:
-                        skater_game_pts[assist_id] = skater_game_pts.get(assist_id, 0) + 1
-
-            # --- Goalie points in this game from boxscore ---
-            goalie_game_pts = {}  # goalie_id -> pts
-            if game_state not in ("FUT", "PRE"):
-                try:
-                    bs = client.game_center.boxscore(game_id=str(g["id"]))
-                    pg = bs.get("playerByGameStats", {})
-                    for side in ("awayTeam", "homeTeam"):
-                        for gl in pg.get(side, {}).get("goalies", []):
-                            gid = gl.get("playerId")
-                            decision = gl.get("decision", "")
-                            goals_against = gl.get("goalsAgainst", 1)
-                            if decision == "W":
-                                pts = 2  # win
-                                if goals_against == 0:
-                                    pts += 2  # shutout
-                                goalie_game_pts[gid] = pts
-                except Exception:
-                    pass
-
-            # --- Per fantasy team: count players + sum game points ---
             fantasy_counts = {}
             for ft in all_teams:
                 count = 0
@@ -317,64 +291,14 @@ def dashboard():
                 for pick in ft.picks:
                     if pick.player_id and player_team.get(pick.player_id) in game_teams:
                         count += 1
-                        pts += skater_game_pts.get(pick.player_id, 0)
+                        pts += skater_pts.get(pick.player_id, 0)
                     elif pick.goalie_id and goalie_team.get(pick.goalie_id) in game_teams:
                         count += 1
-                        pts += goalie_game_pts.get(pick.goalie_id, 0)
+                        pts += goalie_pts.get(pick.goalie_id, 0)
                 if count > 0:
                     fantasy_counts[ft.id] = {"name": ft.name, "count": count, "pts": pts}
 
-            # Format start time in ET
-            start_time_display = ""
-            start_utc = g.get("startTimeUTC", "")
-            if start_utc:
-                try:
-                    dt = datetime.fromisoformat(start_utc.replace("Z", "+00:00"))
-                    et_offset = g.get("easternUTCOffset", "-04:00")
-                    hours = int(et_offset.split(":")[0])
-                    dt_et = dt + timedelta(hours=hours)
-                    start_time_display = dt_et.strftime("%-I:%M %p ET")
-                except Exception:
-                    start_time_display = start_utc
-
-            # Period label
-            period_desc = g.get("periodDescriptor", {})
-            period_num = period_desc.get("number", 0)
-            period_type = period_desc.get("periodType", "REG")
-            if period_type == "OT":
-                period_label = "OT"
-            elif period_type == "SO":
-                period_label = "SO"
-            else:
-                period_label = {1: "1st", 2: "2nd", 3: "3rd"}.get(period_num, f"P{period_num}")
-
-            clock = g.get("clock") or {}
-            in_intermission = clock.get("inIntermission", False)
-            time_remaining = clock.get("timeRemaining", "")
-
-            state = g.get("gameState", "FUT")
-            # Normalize finished states
-            if state in ("OFF", "FINAL"):
-                state = "FINAL"
-
-            today_games.append({
-                "state": state,
-                "start_time": start_time_display,
-                "away": {
-                    "abbrev": away_abbrev,
-                    "logo": g.get("awayTeam", {}).get("logo", ""),
-                    "score": g.get("awayTeam", {}).get("score"),
-                },
-                "home": {
-                    "abbrev": home_abbrev,
-                    "logo": g.get("homeTeam", {}).get("logo", ""),
-                    "score": g.get("homeTeam", {}).get("score"),
-                },
-                "period_label": period_label,
-                "in_intermission": in_intermission,
-                "time_remaining": time_remaining,
-                "fantasy_counts": fantasy_counts,
-            })
+            today_games.append({**g, "fantasy_counts": fantasy_counts})
     except Exception:
         today_games = []
 
