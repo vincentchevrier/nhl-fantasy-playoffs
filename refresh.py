@@ -5,9 +5,10 @@ On every authenticated page load, call maybe_refresh(app).
 It runs in a background thread so the user never waits.
 
 Rules:
-  - Fetch today's schedule if last schedule check > 24h ago
+  - Fetch today's schedule if last schedule check > 24h ago, OR if stored window is from a previous day
   - Pull playoff stats if:
       * in game window AND last pull > 5 minutes ago, OR
+      * within 2h after game window ended AND last pull > 30 minutes ago, OR
       * last pull > 24 hours ago (daily catch-up)
 """
 
@@ -36,23 +37,40 @@ def _run(app):
 
 
 def _maybe_update_schedule(app, AppSetting):
-    """Fetch today's game schedule if it hasn't been checked in the last 24h."""
+    """Fetch today's game schedule if it hasn't been checked in the last 24h,
+    or if the stored window is from a previous day (stale)."""
     last = _get_setting(AppSetting, "last_schedule_check")
     if last and _age_hours(last) < 24:
-        return
+        # Still re-fetch if the stored window date isn't today
+        window_start = _get_setting(AppSetting, "game_window_start")
+        if window_start:
+            try:
+                window_date = datetime.fromisoformat(window_start.replace("Z", "+00:00")).date()
+                if window_date >= date.today():
+                    return  # Window is current
+                # Window is from a previous day — fall through to re-fetch
+            except Exception:
+                return
+        else:
+            return  # No games stored, recently checked — skip
     _fetch_schedule(app, AppSetting)
 
 
 def _maybe_refresh_stats(app, AppSetting):
-    """Pull stats if in-game (5 min cooldown) or if it's been 24h since last pull."""
+    """Pull stats if in-game (5 min cooldown), recently after a game (30 min cooldown),
+    or if it's been 24h since last pull (daily catch-up)."""
     last = _get_setting(AppSetting, "last_stats_refresh")
     age_minutes = _age_minutes(last) if last else float("inf")
 
     in_window = _in_game_window(AppSetting)
+    post_window = _recently_after_game_window(AppSetting)
 
     if in_window and age_minutes >= 5:
         _refresh_stats(app, AppSetting)
-    elif not in_window and age_minutes >= 60 * 24:
+    elif post_window and age_minutes >= 30:
+        # Game just ended — do one final pull to capture the last few minutes
+        _refresh_stats(app, AppSetting)
+    elif not in_window and not post_window and age_minutes >= 60 * 24:
         _refresh_stats(app, AppSetting)
 
 
@@ -483,5 +501,20 @@ def _in_game_window(AppSetting):
         if start.date() != date.today():
             return False
         return start <= now <= end
+    except Exception:
+        return False
+
+
+def _recently_after_game_window(AppSetting, hours=2):
+    """Return True if today's game window ended within the past `hours` hours."""
+    end_s = _get_setting(AppSetting, "game_window_end")
+    if not end_s:
+        return False
+    try:
+        now = datetime.now(timezone.utc)
+        end = datetime.fromisoformat(end_s.replace("Z", "+00:00"))
+        if end.date() != date.today():
+            return False
+        return end < now < end + timedelta(hours=hours)
     except Exception:
         return False
